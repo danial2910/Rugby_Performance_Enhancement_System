@@ -123,6 +123,44 @@ public class TrainerService {
         long workoutCount = workoutPlanRepository.countByUserId(user.getId());
         long mealCount    = mealPlanRepository.countByUserId(user.getId());
 
+        // ── Compute active workout plan progress ──────────────────────────────
+        int workoutProgress = 0;
+        WorkoutPlan activeWorkout = workoutPlanRepository
+                .findByUserIdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .filter(WorkoutPlan::isActive)
+                .findFirst()
+                .orElse(null);
+        if (activeWorkout != null) {
+            int completed = activeWorkout.getCompletedItems() != null
+                    ? activeWorkout.getCompletedItems().size() : 0;
+            int total = activeWorkout.getSessionsPerWeek() != null
+                    ? activeWorkout.getSessionsPerWeek() * 4
+                    : Math.max(1, completed);
+            if (total > 0) {
+                workoutProgress = (int) Math.min(100, Math.round((completed * 100.0) / total));
+            }
+        }
+
+        // ── Compute active meal plan progress ─────────────────────────────────
+        int mealProgress = 0;
+        MealPlan activeMeal = mealPlanRepository
+                .findByUserIdOrderByCreatedAtDesc(user.getId())
+                .stream()
+                .filter(MealPlan::isActive)
+                .findFirst()
+                .orElse(null);
+        if (activeMeal != null) {
+            int completed = activeMeal.getCompletedItems() != null
+                    ? activeMeal.getCompletedItems().size() : 0;
+            int total = activeMeal.getMealsPerDay() != null
+                    ? activeMeal.getMealsPerDay() * 7
+                    : Math.max(1, completed);
+            if (total > 0) {
+                mealProgress = (int) Math.min(100, Math.round((completed * 100.0) / total));
+            }
+        }
+
         return TrainerAthleteResponse.builder()
                 .id(user.getId())
                 .username(user.getUsername())
@@ -133,6 +171,8 @@ public class TrainerService {
                 .rugbyPosition(athlete != null ? athlete.getRugbyPosition() : null)
                 .workoutPlanCount(workoutCount)
                 .mealPlanCount(mealCount)
+                .workoutProgress(workoutProgress)
+                .mealProgress(mealProgress)
                 .joinedAt(user.getCreatedAt())
                 .build();
     }
@@ -169,7 +209,7 @@ public class TrainerService {
                 .userId(plan.getUserId())
                 .planName(plan.getPlanName())
                 .rugbyPosition(plan.getRugbyPosition())
-                .goal(plan.getGoal())
+                .goals(plan.getGoals())
                 .weight(plan.getWeight())
                 .height(plan.getHeight())
                 .age(plan.getAge())

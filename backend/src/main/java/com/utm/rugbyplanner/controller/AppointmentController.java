@@ -24,9 +24,11 @@ import java.util.List;
  * │  GET    │  /api/appointments                       │  ATHLETE  │  UC009 List     │
  * │  PUT    │  /api/appointments/{id}/edit             │  ATHLETE  │  UC009 Edit     │
  * │  PUT    │  /api/appointments/{id}/cancel           │  ATHLETE  │  UC009 Cancel   │
+ * │  DELETE │  /api/appointments/{id}/athlete          │  ATHLETE  │  UC009 Delete   │
  * │  GET    │  /api/appointments/trainer               │  TRAINER  │  UC012 List     │
  * │  PUT    │  /api/appointments/{id}/approve          │  TRAINER  │  UC012 Approve  │
  * │  PUT    │  /api/appointments/{id}/reject           │  TRAINER  │  UC012 Reject   │
+ * │  DELETE │  /api/appointments/{id}/trainer          │  TRAINER  │  UC012 Delete   │
  * └──────────────────────────────────────────────────────────────────────────────────┘
  */
 @RestController
@@ -95,6 +97,24 @@ public class AppointmentController {
                         appointmentService.cancelAppointment(userDetails.getUsername(), id)));
     }
 
+    // ── UC009: Athlete deletes appointment ───────────────────────────────────
+
+    /**
+     * DELETE /api/appointments/{id}/athlete
+     *
+     * Permanently removes the record from the athlete's history.
+     * Allowed for any status so the athlete can clean up old/past entries.
+     * 200 OK → success message
+     */
+    @DeleteMapping("/{id}/athlete")
+    @PreAuthorize("hasRole('ATHLETE')")
+    public ResponseEntity<ApiResponse<Void>> deleteAsAthlete(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id) {
+        appointmentService.deleteAppointmentAsAthlete(userDetails.getUsername(), id);
+        return ResponseEntity.ok(ApiResponse.success("Appointment deleted.", null));
+    }
+
     // ── UC012: Trainer views their appointments ───────────────────────────────
 
     @GetMapping("/trainer")
@@ -130,5 +150,36 @@ public class AppointmentController {
         return ResponseEntity.ok(
                 ApiResponse.success("Appointment rejected.",
                         appointmentService.rejectAppointment(userDetails.getUsername(), id, req)));
+    }
+
+    // ── UC012: Trainer deletes appointment ───────────────────────────────────
+
+    /**
+     * DELETE /api/appointments/{id}/trainer
+     *
+     * Permanently removes the record from the trainer's history.
+     * Allowed for any status so the trainer can clean up old/past entries.
+     * 200 OK → success message
+     */
+    @DeleteMapping("/{id}/trainer")
+    @PreAuthorize("hasRole('TRAINER')")
+    public ResponseEntity<ApiResponse<Void>> deleteAsTrainer(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id) {
+        appointmentService.deleteAppointmentAsTrainer(userDetails.getUsername(), id);
+        return ResponseEntity.ok(ApiResponse.success("Appointment deleted.", null));
+    }
+
+    // ── UC012: Trainer adds post-session feedback ─────────────────────────────
+
+    @PutMapping("/{id}/feedback")
+    @PreAuthorize("hasRole('TRAINER')")
+    public ResponseEntity<ApiResponse<AppointmentResponse>> addFeedback(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id,
+            @Valid @RequestBody AppointmentFeedbackRequest req) {
+        return ResponseEntity.ok(
+                ApiResponse.success("Feedback saved.",
+                        appointmentService.addFeedback(userDetails.getUsername(), id, req)));
     }
 }

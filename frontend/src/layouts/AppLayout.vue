@@ -36,9 +36,11 @@
         <!-- Trainer nav -->
         <template v-if="authStore.isTrainer">
           <p class="nav-section-label">Trainer</p>
-          <RouterLink to="/trainer"      class="nav-item"><span class="nav-icon">📊</span>Dashboard</RouterLink>
-          <RouterLink to="/profile"      class="nav-item"><span class="nav-icon">👤</span>My Profile</RouterLink>
-          <RouterLink to="/appointments" class="nav-item"><span class="nav-icon">📅</span>Appointments</RouterLink>
+          <RouterLink to="/profile"           class="nav-item"><span class="nav-icon">👤</span>My Profile</RouterLink>
+          <RouterLink to="/appointments"      class="nav-item"><span class="nav-icon">📅</span>Appointments</RouterLink>
+          <p class="nav-section-label">Plan Management</p>
+          <RouterLink to="/trainer/workouts"  class="nav-item"><span class="nav-icon">💪</span>Workout Plans</RouterLink>
+          <RouterLink to="/trainer/meals"     class="nav-item"><span class="nav-icon">🥗</span>Meal Plans</RouterLink>
         </template>
       </nav>
 
@@ -98,12 +100,13 @@ const initials = computed(() => {
 
 const pageTitles = {
   Dashboard:       'Dashboard',
-  TrainerDashboard:'Trainer Dashboard',
-  MealPlanner:     'Meal Planner',
-  Workout:         'Workout Planner',
-  Chatbot:         'AI Chatbot',
-  Appointments:    'Appointments',
-  Profile:         'My Profile'
+  TrainerWorkouts: 'Workout Plan Management',
+  TrainerMeals:     'Meal Plan Management',
+  MealPlanner:      'Meal Planner',
+  Workout:          'Workout Planner',
+  Chatbot:          'AI Chatbot',
+  Appointments:     'Appointments',
+  Profile:          'My Profile'
 }
 
 const pageTitle = computed(() => pageTitles[route.name] || 'Rugby Performance Enhancement System')

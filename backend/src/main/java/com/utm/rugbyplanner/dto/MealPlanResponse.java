@@ -20,8 +20,8 @@ public class MealPlanResponse {
     private String  planName;
 
     // ── Input parameters ─────────────────────────────────────
-    private String  rugbyPosition;
-    private String  goal;
+    private String       rugbyPosition;
+    private List<String> goals;
     private Integer weight;
     private Integer height;
     private Integer age;

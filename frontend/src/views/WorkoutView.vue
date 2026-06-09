@@ -236,7 +236,10 @@
                 <p class="plan-item-date">{{ formatDate(plan.createdAt) }}</p>
               </div>
 
-              <button class="delete-btn" @click.stop="confirmDelete(plan)" title="Delete plan">🗑️</button>
+              <div class="plan-item-actions">
+                <button class="icon-btn" @click.stop="openCopyModal(plan)" title="Copy plan">📋</button>
+                <button class="icon-btn icon-btn-danger" @click.stop="confirmDelete(plan)" title="Delete plan">🗑️</button>
+              </div>
             </div>
 
             <!-- Pagination controls -->
@@ -459,6 +462,47 @@
       </div>
     </div>
 
+    <!-- Copy plan modal -->
+    <div v-if="copySource" class="modal-overlay" @click.self="closeCopyModal">
+      <div class="modal modal-copy">
+        <h3>📋 Copy Plan</h3>
+        <p>Duplicating <strong>"{{ copySource.planName }}"</strong>. Enter a name for the new copy.</p>
+
+        <!-- Plan picker -->
+        <div class="copy-plan-list">
+          <p class="copy-section-label">Or copy a different plan:</p>
+          <div
+            v-for="p in workoutStore.plans"
+            :key="p.id"
+            class="copy-plan-item"
+            :class="{ selected: copySource.id === p.id }"
+            @click="selectCopySource(p)">
+            <span class="copy-plan-name">{{ p.planName }}</span>
+            <span class="copy-plan-meta">{{ p.rugbyPosition }} · {{ p.sessionsPerWeek }}×/week</span>
+          </div>
+        </div>
+
+        <div class="copy-name-row">
+          <label class="form-label">New plan name</label>
+          <input
+            v-model="copyName"
+            class="form-input"
+            placeholder="e.g. Pre-Season Copy"
+            @keydown.enter="handleCopy"
+            maxlength="80" />
+          <p v-if="copyError" class="copy-error">{{ copyError }}</p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="closeCopyModal">Cancel</button>
+          <button class="btn btn-primary" :disabled="copying" @click="handleCopy">
+            <span v-if="copying" class="spinner-sm"></span>
+            {{ copying ? 'Copying…' : 'Copy Plan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -488,6 +532,12 @@ const form = ref({
 
 const errors       = ref({})
 const deleteTarget = ref(null)
+
+// ── Copy modal state ──────────────────────────────────────────────────────────
+const copySource = ref(null)
+const copyName   = ref('')
+const copying    = ref(false)
+const copyError  = ref('')
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 const activeTab = ref('plan')
@@ -776,6 +826,41 @@ async function handleDelete() {
   deleteTarget.value = null
 }
 
+// ── Copy ──────────────────────────────────────────────────────────────────────
+function openCopyModal(plan) {
+  copySource.value = plan
+  copyName.value   = plan.planName + ' (Copy)'
+  copyError.value  = ''
+}
+
+function selectCopySource(plan) {
+  copySource.value = plan
+  copyName.value   = plan.planName + ' (Copy)'
+  copyError.value  = ''
+}
+
+function closeCopyModal() {
+  copySource.value = null
+  copyName.value   = ''
+  copyError.value  = ''
+}
+
+async function handleCopy() {
+  const name = copyName.value.trim()
+  if (!name) { copyError.value = 'Please enter a name for the copied plan.'; return }
+  copying.value   = true
+  copyError.value = ''
+  const result = await workoutStore.copyPlan(copySource.value.id, name)
+  copying.value = false
+  if (result) {
+    closeCopyModal()
+    workoutStore.setActivePlan(result)
+    currentPage.value = 1
+  } else {
+    copyError.value = workoutStore.error || 'Failed to copy plan.'
+  }
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function goalLabel(goal) {
   const map = { STRENGTH: '💪 Strength', POWER: '⚡ Power', ENDURANCE: '🏃 Endurance', LEAN: '🔥 Lean' }
@@ -943,13 +1028,15 @@ function renderMarkdown(text) {
 .progress-bar-fill  { height: 100%; background: var(--color-green); border-radius: 99px; transition: width 0.3s ease; }
 .progress-label { font-size: 10px; color: var(--color-muted); white-space: nowrap; }
 
-.delete-btn {
+.plan-item-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.icon-btn {
   background: none; border: none; cursor: pointer;
   font-size: 14px; padding: 4px 6px;
   border-radius: var(--radius-sm);
-  opacity: 0.45; transition: opacity var(--transition); flex-shrink: 0;
+  opacity: 0.45; transition: opacity var(--transition);
 }
-.delete-btn:hover { opacity: 1; }
+.icon-btn:hover { opacity: 1; }
+.icon-btn-danger:hover { opacity: 1; color: var(--color-error); }
 
 /* ── Pagination ──────────────────────────────────────────────── */
 .pagination {
@@ -1014,6 +1101,7 @@ function renderMarkdown(text) {
   font-size: 30px;
   animation: pulse 1.5s ease-in-out infinite;
 }
+@keyframes spin   { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.1);opacity:0.7} }
 
 .progress-dots { display: flex; gap: 6px; }
@@ -1072,6 +1160,9 @@ function renderMarkdown(text) {
 .btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-danger    { background: var(--color-error); color: #fff; }
 .btn-danger:hover { opacity: 0.85; }
+.btn-primary   { background: var(--color-green); color: #fff; }
+.btn-primary:hover:not(:disabled) { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-sm        { padding: 5px 10px; font-size: 12px; }
 .active-indicator { font-size: 12.5px; color: var(--color-green-light); font-weight: 500; display: flex; align-items: center; gap: 4px; }
 
@@ -1234,6 +1325,19 @@ function renderMarkdown(text) {
 .modal h3      { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; }
 .modal p       { font-size: 14px; color: var(--color-text-dim); line-height: 1.6; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+/* Copy modal extras */
+.modal-copy    { max-width: 480px; }
+.copy-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--color-muted); margin-bottom: 6px; }
+.copy-plan-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px; background: var(--color-bg-3); }
+.copy-plan-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; transition: background var(--transition); }
+.copy-plan-item:hover { background: var(--color-surface); }
+.copy-plan-item.selected { background: var(--color-green-dim); border: 1px solid var(--color-green); }
+.copy-plan-name { font-size: 13px; font-weight: 500; color: var(--color-text); }
+.copy-plan-meta { font-size: 11px; color: var(--color-muted); }
+.copy-name-row  { display: flex; flex-direction: column; gap: 6px; }
+.copy-error     { font-size: 12px; color: var(--color-error); }
+.spinner-sm     { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
 
 /* ── Transitions ─────────────────────────────────────────────── */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }

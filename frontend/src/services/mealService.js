@@ -46,6 +46,11 @@ const mealService = {
   async deletePlan(id) {
     const { data } = await http.delete(`/meal/plans/${id}`)
     return data
+  },
+
+  async copyPlan(id, newName) {
+    const { data } = await http.post(`/meal/plans/${id}/copy`, { newName })
+    return data
   }
 }
 

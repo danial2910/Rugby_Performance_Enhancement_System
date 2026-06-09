@@ -11,7 +11,9 @@
  * /login          → LoginView        (public)
  * /register       → RegisterView     (public - UC002)
  * /dashboard      → DashboardView    (protected - ATHLETE)
- * /trainer        → TrainerView      (protected - TRAINER)
+ * /trainer          → redirect → /trainer/workouts
+ * /trainer/workouts → TrainerWorkoutView (protected - TRAINER)
+ * /trainer/meals    → TrainerMealView    (protected - TRAINER)
  * /meal-planner   → MealPlannerView  (protected)
  * /workout        → WorkoutView      (protected)
  * /chatbot        → ChatbotView      (protected)
@@ -23,8 +25,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 // Lazy-loaded views for better performance
 const LoginView       = () => import('@/views/auth/LoginView.vue')
 const RegisterView    = () => import('@/views/auth/RegisterView.vue')
-const DashboardView   = () => import('@/views/DashboardView.vue')
-const TrainerView     = () => import('@/views/TrainerView.vue')
+const DashboardView        = () => import('@/views/DashboardView.vue')
+const TrainerWorkoutView   = () => import('@/views/TrainerWorkoutView.vue')
+const TrainerMealView      = () => import('@/views/TrainerMealView.vue')
 const MealPlannerView = () => import('@/views/MealPlannerView.vue')
 const WorkoutView     = () => import('@/views/WorkoutView.vue')
 const ChatbotView     = () => import('@/views/ChatbotView.vue')
@@ -86,12 +89,26 @@ const routes = [
       },
       {
         path: 'trainer',
-        name: 'TrainerDashboard',
-        component: TrainerView,
+        redirect: '/trainer/workouts'
+      },
+      {
+        path: 'trainer/workouts',
+        name: 'TrainerWorkouts',
+        component: TrainerWorkoutView,
         meta: {
           requiresAuth: true,
           role: 'TRAINER',
-          title: 'Trainer Dashboard — Rugby Performance Enhancement System'
+          title: 'Workout Plan Management — Rugby Performance Enhancement System'
+        }
+      },
+      {
+        path: 'trainer/meals',
+        name: 'TrainerMeals',
+        component: TrainerMealView,
+        meta: {
+          requiresAuth: true,
+          role: 'TRAINER',
+          title: 'Meal Plan Management — Rugby Performance Enhancement System'
         }
       },
       {
@@ -185,14 +202,14 @@ router.beforeEach((to, from, next) => {
   // Already logged in → don't show login/register page
   if (!to.meta.requiresAuth && isLoggedIn && (to.name === 'Login' || to.name === 'Register')) {
     const destination = userRole === 'ADMIN' ? '/admin'
-                      : userRole === 'TRAINER' ? '/trainer'
+                      : userRole === 'TRAINER' ? '/trainer/workouts'
                       : '/dashboard'
     return next(destination)
   }
 
   // Role-based guard: ADMIN-only routes
   if (to.meta.role === 'ADMIN' && userRole !== 'ADMIN') {
-    const fallback = userRole === 'TRAINER' ? '/trainer' : '/dashboard'
+    const fallback = userRole === 'TRAINER' ? '/trainer/workouts' : '/dashboard'
     return next(fallback)
   }
 
@@ -203,7 +220,7 @@ router.beforeEach((to, from, next) => {
 
   // Role-based guard: ATHLETE-only routes
   if (to.meta.role === 'ATHLETE' && userRole !== 'ATHLETE') {
-    return next(userRole === 'ADMIN' ? '/admin' : '/trainer')
+    return next(userRole === 'ADMIN' ? '/admin' : '/trainer/workouts')
   }
 
   next()

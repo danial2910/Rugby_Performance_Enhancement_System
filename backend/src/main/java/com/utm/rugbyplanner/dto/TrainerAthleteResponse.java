@@ -22,5 +22,7 @@ public class TrainerAthleteResponse {
     private String rugbyPosition;   // from profile if available, else null
     private long   workoutPlanCount;
     private long   mealPlanCount;
+    private int    workoutProgress;   // 0–100 % active workout plan completion
+    private int    mealProgress;      // 0–100 % active meal plan completion
     private LocalDateTime joinedAt;
 }

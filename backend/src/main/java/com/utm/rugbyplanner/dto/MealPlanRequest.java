@@ -3,6 +3,8 @@ package com.utm.rugbyplanner.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.util.List;
+
 /**
  * MealPlanRequest — body for POST /api/meal/generate
  *
@@ -20,8 +22,9 @@ public class MealPlanRequest {
     @NotBlank(message = "Rugby position is required.")
     private String rugbyPosition;
 
-    @NotBlank(message = "Goal is required.")
-    private String goal;             // MUSCLE_GAIN | WEIGHT_LOSS | MAINTAIN | PERFORMANCE
+    @NotNull(message = "At least one nutrition goal is required.")
+    @Size(min = 1, message = "At least one nutrition goal is required.")
+    private List<String> goals;      // e.g. ["MUSCLE_GAIN", "PERFORMANCE"]
 
     @NotNull(message = "Weight is required.")
     @Min(value = 40, message = "Weight must be at least 40 kg.")

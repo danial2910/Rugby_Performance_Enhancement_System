@@ -1,5 +1,6 @@
 package com.utm.rugbyplanner.service;
 
+import com.utm.rugbyplanner.dto.CopyPlanRequest;
 import com.utm.rugbyplanner.dto.MealPlanRequest;
 import com.utm.rugbyplanner.dto.MealPlanResponse;
 import com.utm.rugbyplanner.dto.PlanEditRequest;
@@ -40,21 +41,24 @@ public class MealPlanService {
     public MealPlanResponse generatePlan(String username, MealPlanRequest req) {
         User user = findUser(username);
 
-        log.info("UC006 Generate meal plan — user: {}, position: {}, goal: {}, diet: {}",
-                username, req.getRugbyPosition(), req.getGoal(), req.getDietaryPreference());
+        log.info("UC006 Generate meal plan — user: {}, position: {}, goals: {}, diet: {}",
+                username, req.getRugbyPosition(), req.getGoals(), req.getDietaryPreference());
 
         String prompt = buildPrompt(req);
         String generatedPlan = ollamaService.generate(prompt);
 
+        String goalsLabel = req.getGoals().stream()
+                .map(this::goalLabel)
+                .collect(Collectors.joining(" + "));
         String planName = (req.getPlanName() != null && !req.getPlanName().isBlank())
                 ? req.getPlanName()
-                : req.getRugbyPosition() + " – " + goalLabel(req.getGoal()) + " Meal Plan";
+                : req.getRugbyPosition() + " – " + goalsLabel + " Meal Plan";
 
         MealPlan plan = MealPlan.builder()
                 .userId(user.getId())
                 .planName(planName)
                 .rugbyPosition(req.getRugbyPosition())
-                .goal(req.getGoal())
+                .goals(req.getGoals())
                 .weight(req.getWeight())
                 .height(req.getHeight())
                 .age(req.getAge())
@@ -144,6 +148,44 @@ public class MealPlanService {
         return toResponse(saved);
     }
 
+    // ── UC006 AF2: Copy an existing plan ─────────────────────────────────────
+
+    /**
+     * Duplicates a meal plan owned by this user, saving it under a new name.
+     * The copy starts inactive with an empty progress list.
+     */
+    public MealPlanResponse copyPlan(String username, String planId, CopyPlanRequest req) {
+        User user = findUser(username);
+        MealPlan source = mealPlanRepository
+                .findByIdAndUserId(planId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Meal plan not found."));
+
+        MealPlan copy = MealPlan.builder()
+                .userId(user.getId())
+                .planName(req.getNewName())
+                .rugbyPosition(source.getRugbyPosition())
+                .goals(source.getGoals())
+                .weight(source.getWeight())
+                .height(source.getHeight())
+                .age(source.getAge())
+                .dietaryPreference(source.getDietaryPreference())
+                .allergies(source.getAllergies())
+                .mealsPerDay(source.getMealsPerDay())
+                .activityLevel(source.getActivityLevel())
+                .targetWeight(source.getTargetWeight())
+                .trainingPhase(source.getTrainingPhase())
+                .mealPrepTime(source.getMealPrepTime())
+                .generatedPlan(source.getGeneratedPlan())
+                // copy starts fresh — not active, no trainer note, no progress
+                .isActive(false)
+                .completedItems(new java.util.ArrayList<>())
+                .build();
+
+        MealPlan saved = mealPlanRepository.save(copy);
+        log.info("UC006 AF2 Meal plan copied — source: {}, new: {}", planId, saved.getId());
+        return toResponse(saved);
+    }
+
     // ── UC007: Update progress / checklist ───────────────────────────────────
 
     public MealPlanResponse updateProgress(String username, String planId, PlanProgressRequest req) {
@@ -169,9 +211,13 @@ public class MealPlanService {
         String phase         = phaseLabel(req.getTrainingPhase());
         String prepTime      = prepLabel(req.getMealPrepTime());
 
-        // Accurate TDEE using activity level
+        // Accurate TDEE using activity level; use first goal for calorie adjustment
         int tdee           = estimateTdee(req.getWeight(), req.getHeight(), req.getAge(), req.getActivityLevel());
-        int targetCalories = adjustCaloriesForGoal(tdee, req.getGoal());
+        String primaryGoal = req.getGoals().isEmpty() ? "MAINTAIN" : req.getGoals().get(0);
+        int targetCalories = adjustCaloriesForGoal(tdee, primaryGoal);
+        String goalsText   = req.getGoals().stream()
+                .map(this::goalLabel)
+                .collect(Collectors.joining(", "));
 
         return String.format("""
 You are an expert sports nutritionist specialising in rugby performance nutrition for university athletes (UTM Pirates, Malaysia).
@@ -180,7 +226,7 @@ Generate a complete 7-day meal plan for a rugby player with the following profil
 
 PLAYER PROFILE:
 - Position: %s
-- Nutrition Goal: %s
+- Nutrition Goals: %s
 - Physical Stats: %d kg current weight, %d cm height, %d years old
 - Target Weight: %s
 - Estimated Daily Calorie Target: ~%d kcal/day (based on %s activity level)
@@ -218,7 +264,7 @@ INSTRUCTIONS:
 Begin the 7-day meal plan now:
 """,
                 req.getRugbyPosition(),
-                goalLabel(req.getGoal()),
+                goalsText,
                 req.getWeight(), req.getHeight(), req.getAge(),
                 targetWeightStr,
                 targetCalories,
@@ -301,7 +347,7 @@ Begin the 7-day meal plan now:
                 .userId(plan.getUserId())
                 .planName(plan.getPlanName())
                 .rugbyPosition(plan.getRugbyPosition())
-                .goal(plan.getGoal())
+                .goals(plan.getGoals())
                 .weight(plan.getWeight())
                 .height(plan.getHeight())
                 .age(plan.getAge())

@@ -123,6 +123,23 @@ export const useWorkoutStore = defineStore('workout', () => {
     }
   }
 
+  /** UC004 AF2: Duplicate an existing plan with a new name */
+  async function copyPlan(id, newName) {
+    error.value = null
+    try {
+      const response = await workoutService.copyPlan(id, newName)
+      if (response.success) {
+        plans.value = [response.data, ...plans.value]
+        return response.data
+      }
+      error.value = response.message || 'Failed to copy plan.'
+      return null
+    } catch {
+      error.value = 'Failed to copy plan. Please try again.'
+      return null
+    }
+  }
+
   /** UC005: Delete a plan */
   async function deletePlan(id) {
     error.value = null
@@ -143,6 +160,6 @@ export const useWorkoutStore = defineStore('workout', () => {
   return {
     plans, activePlan, generating, loadingPlans, error, generateSuccess,
     generatePlan, fetchPlans, editPlan, activatePlan, updateProgress,
-    deletePlan, setActivePlan, clearError
+    deletePlan, copyPlan, setActivePlan, clearError
   }
 })

@@ -123,6 +123,23 @@ export const useMealStore = defineStore('meal', () => {
     }
   }
 
+  /** UC006 AF2: Duplicate an existing meal plan with a new name */
+  async function copyPlan(id, newName) {
+    error.value = null
+    try {
+      const response = await mealService.copyPlan(id, newName)
+      if (response.success) {
+        plans.value = [response.data, ...plans.value]
+        return response.data
+      }
+      error.value = response.message || 'Failed to copy meal plan.'
+      return null
+    } catch {
+      error.value = 'Failed to copy meal plan. Please try again.'
+      return null
+    }
+  }
+
   /** UC007: Delete a meal plan */
   async function deletePlan(id) {
     error.value = null
@@ -143,6 +160,6 @@ export const useMealStore = defineStore('meal', () => {
   return {
     plans, activePlan, generating, loadingPlans, error, generateSuccess,
     generatePlan, fetchPlans, editPlan, activatePlan, updateProgress,
-    deletePlan, setActivePlan, clearError
+    deletePlan, copyPlan, setActivePlan, clearError
   }
 })

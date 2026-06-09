@@ -5,7 +5,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">Athlete Plan Management</h1>
-        <p class="page-subtitle">Review and edit your athletes' workout and meal plans</p>
+        <p class="page-subtitle">Monitor progress and edit your athletes' workout and meal plans</p>
       </div>
     </div>
 
@@ -180,12 +180,38 @@
               <span v-if="trainerStore.selectedPlan.goal" class="chip">
                 🎯 {{ goalLabel(trainerStore.selectedPlan.goal) }}
               </span>
+              <span v-if="trainerStore.selectedPlan.goals && trainerStore.selectedPlan.goals.length" class="chip">
+                🎯 {{ trainerStore.selectedPlan.goals.map(g => goalLabel(g)).join(' + ') }}
+              </span>
               <span v-if="trainerStore.selectedPlan.trainingPhase" class="chip">
                 📅 {{ phaseLabel(trainerStore.selectedPlan.trainingPhase) }}
               </span>
               <span v-if="trainerStore.selectedPlan.isActive" class="chip chip-active">
                 ✅ ACTIVE
               </span>
+            </div>
+
+            <!-- ── Plan Progress (visible in read mode only) ──────────── -->
+            <div v-if="!editMode && trainerStore.selectedPlan.completedItems" class="progress-section">
+              <div class="progress-header">
+                <span class="progress-title">📊 Athlete Progress</span>
+                <span class="progress-fraction">
+                  {{ trainerStore.selectedPlan.completedItems.length }}
+                  / {{ estimatedTotalItems(trainerStore.selectedPlan) }} items completed
+                </span>
+              </div>
+              <div class="progress-track">
+                <div
+                  class="progress-fill"
+                  :style="{ width: planProgressPct(trainerStore.selectedPlan) + '%' }"
+                  :class="{
+                    'fill-low':  planProgressPct(trainerStore.selectedPlan) < 34,
+                    'fill-mid':  planProgressPct(trainerStore.selectedPlan) >= 34 && planProgressPct(trainerStore.selectedPlan) < 75,
+                    'fill-high': planProgressPct(trainerStore.selectedPlan) >= 75
+                  }"
+                ></div>
+              </div>
+              <div class="progress-pct-label">{{ planProgressPct(trainerStore.selectedPlan) }}% complete</div>
             </div>
 
             <!-- Existing trainer note display -->
@@ -402,6 +428,26 @@ function goalLabel(goal) {
     PERFORMANCE: '🏆 Performance', MAINTENANCE: '🔄 Maintenance'
   }
   return map[goal] || goal
+}
+
+// ── Plan progress helpers ─────────────────────────────────────────────────────
+
+/**
+ * Estimate total checkable items for a plan.
+ * Meal plan: mealsPerDay × 7 days.
+ * Workout plan: sessionsPerWeek × 4 weeks (approx 1 month).
+ */
+function estimatedTotalItems(plan) {
+  if (plan.mealsPerDay)      return (plan.mealsPerDay || 3) * 7
+  if (plan.sessionsPerWeek)  return (plan.sessionsPerWeek || 3) * 4
+  return Math.max(1, plan.completedItems?.length || 1)
+}
+
+function planProgressPct(plan) {
+  const completed = plan.completedItems?.length || 0
+  const total     = estimatedTotalItems(plan)
+  if (total === 0) return 0
+  return Math.min(100, Math.round((completed / total) * 100))
 }
 
 function phaseLabel(phase) {
@@ -730,6 +776,36 @@ function renderMarkdown(text) {
   border-color: var(--color-green-light);
   color: var(--color-green-light);
 }
+
+/* ── Plan progress ─────────────────────────────────────────────────────────── */
+.progress-section {
+  margin-top: 12px;
+  background: var(--color-bg-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+.progress-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.progress-title  { font-size: 12px; font-weight: 700; color: var(--color-text); }
+.progress-fraction { font-size: 11px; color: var(--color-muted); }
+.progress-track  {
+  height: 8px;
+  background: var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill   {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.fill-low  { background: #ef4444; }
+.fill-mid  { background: #f59e0b; }
+.fill-high { background: var(--color-green-light); }
+.progress-pct-label { font-size: 11px; color: var(--color-muted); margin-top: 5px; text-align: right; }
 
 /* ── Trainer note banner ───────────────────────────────────────────────────── */
 .trainer-note-banner {

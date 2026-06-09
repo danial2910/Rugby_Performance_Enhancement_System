@@ -108,16 +108,50 @@
               <p v-if="errors.trainerId" class="field-error">{{ errors.trainerId }}</p>
             </div>
 
+            <!-- Trainer availability hint -->
+            <div v-if="selectedTrainerSlots.length" class="avail-hint">
+              <span class="avail-hint-icon">📅</span>
+              <div class="avail-hint-slots">
+                <span class="avail-hint-label">Available slots:</span>
+                <span v-for="slot in selectedTrainerSlots" :key="slot.day" class="avail-hint-chip">
+                  {{ slot.day.slice(0,3) }} {{ slot.startTime }}–{{ slot.endTime }}
+                </span>
+              </div>
+            </div>
+
             <!-- Date + Time -->
             <div class="form-row">
               <div class="form-group" :class="{ 'has-error': errors.date }">
                 <label class="form-label">Date <span class="req">*</span></label>
-                <input v-model="form.date" type="date" class="form-input" :min="today" @change="clearErr('date')" />
+                <input
+                  v-model="form.date"
+                  type="date"
+                  class="form-input"
+                  :min="today"
+                  @change="onDateChange"
+                />
                 <p v-if="errors.date" class="field-error">{{ errors.date }}</p>
               </div>
               <div class="form-group" :class="{ 'has-error': errors.time }">
                 <label class="form-label">Time <span class="req">*</span></label>
-                <input v-model="form.time" type="time" class="form-input" @change="clearErr('time')" />
+                <!-- Slot selector when trainer+date selected and slots available -->
+                <select
+                  v-if="availableTimeSlots.length"
+                  v-model="form.time"
+                  class="form-select"
+                  @change="clearErr('time')"
+                >
+                  <option value="" disabled>Select a time slot</option>
+                  <option v-for="t in availableTimeSlots" :key="t" :value="t">{{ t }}</option>
+                </select>
+                <!-- Fallback free input when no slots computed -->
+                <input
+                  v-else
+                  v-model="form.time"
+                  type="time"
+                  class="form-input"
+                  @change="clearErr('time')"
+                />
                 <p v-if="errors.time" class="field-error">{{ errors.time }}</p>
               </div>
             </div>
@@ -217,12 +251,18 @@
               </div>
               <div class="appt-purpose">{{ appt.purpose }}</div>
               <div v-if="appt.trainerRemarks" class="appt-remarks">
-                <strong>Trainer:</strong> {{ appt.trainerRemarks }}
+                <strong>Trainer remarks:</strong> {{ appt.trainerRemarks }}
+              </div>
+              <div v-if="appt.trainerFeedback" class="appt-feedback">
+                <strong>📋 Session feedback:</strong> {{ appt.trainerFeedback }}
               </div>
             </div>
-            <div v-if="appt.status === 'PENDING'" class="appt-actions">
-              <button class="btn btn-sm btn-edit" @click="openEdit(appt)">✏️ Edit</button>
-              <button class="btn btn-sm btn-ghost" @click="handleCancel(appt.id)">Cancel</button>
+            <div class="appt-actions">
+              <template v-if="appt.status === 'PENDING'">
+                <button class="btn btn-sm btn-edit" @click="openEdit(appt)">✏️ Edit</button>
+                <button class="btn btn-sm btn-ghost" @click="handleCancel(appt.id)">Cancel</button>
+              </template>
+              <button class="btn btn-sm btn-delete" @click="confirmDeleteAthlete(appt)" title="Remove from history">🗑️ Delete</button>
             </div>
           </div>
         </div>
@@ -447,19 +487,96 @@
             </div>
           </div>
 
-          <div v-else-if="appt.trainerRemarks" class="t-remarks">
+          <!-- Remarks display for non-pending -->
+          <div v-else-if="appt.status !== 'PENDING' && appt.trainerRemarks" class="t-remarks">
             <strong>Your remarks:</strong> {{ appt.trainerRemarks }}
+          </div>
+
+          <!-- Delete button — always visible for trainer -->
+          <div class="t-delete-row">
+            <button class="btn btn-delete-sm" @click="confirmDeleteTrainer(appt)" title="Remove from history">
+              🗑️ Delete Record
+            </button>
+          </div>
+
+          <!-- Feedback section — APPROVED appointments -->
+          <div v-if="appt.status === 'APPROVED'" class="t-feedback-section">
+            <!-- Existing feedback display -->
+            <div v-if="appt.trainerFeedback && feedbackEditId !== appt.id" class="t-feedback-display">
+              <div class="t-feedback-header">
+                <span>📋 Session Feedback</span>
+                <button class="btn-link" @click="openFeedbackEdit(appt)">Edit</button>
+              </div>
+              <p class="t-feedback-text">{{ appt.trainerFeedback }}</p>
+            </div>
+            <!-- Feedback input form -->
+            <div v-else class="t-feedback-form">
+              <label class="t-feedback-label">
+                {{ appt.trainerFeedback ? '✏️ Edit Feedback' : '📋 Add Session Feedback' }}
+              </label>
+              <textarea
+                v-model="feedbackMap[appt.id]"
+                class="form-textarea"
+                rows="3"
+                placeholder="e.g. Great effort today. Focus on form for deadlifts next session. Recommend 2 rest days before next training."
+              ></textarea>
+              <div class="t-feedback-btns">
+                <button
+                  class="btn btn-feedback-save"
+                  :disabled="apptStore.saving || !feedbackMap[appt.id]?.trim()"
+                  @click="handleSaveFeedback(appt.id)"
+                >
+                  <span v-if="apptStore.saving" class="btn-spinner"></span>
+                  💾 Save Feedback
+                </button>
+                <button
+                  v-if="appt.trainerFeedback"
+                  class="btn btn-ghost"
+                  @click="feedbackEditId = null"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
     </template>
 
+    <!-- ── Delete confirmation modal (shared) ───────────────────────────── -->
+    <transition name="fade">
+      <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
+        <div class="modal-card modal-small">
+          <div class="modal-header">
+            <h2 class="modal-title">🗑️ Delete Appointment</h2>
+            <button class="modal-close" @click="deleteTarget = null">×</button>
+          </div>
+          <div class="modal-body">
+            <p>Permanently remove this appointment from your records?</p>
+            <div class="delete-preview">
+              <span class="appt-badge" :class="`badge-${deleteTarget.status.toLowerCase()}`">{{ deleteTarget.status }}</span>
+              <span>{{ formatDate(deleteTarget.date) }} · {{ deleteTarget.time }}</span>
+              <span>{{ deleteTarget.status === 'PENDING' || authStore.isAthlete ? deleteTarget.trainerName : deleteTarget.athleteName }}</span>
+            </div>
+            <p class="delete-warning">This cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="deleteTarget = null">Cancel</button>
+            <button class="btn btn-danger" :disabled="apptStore.saving" @click="handleDelete">
+              <span v-if="apptStore.saving" class="btn-spinner"></span>
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { useAuthStore }        from '@/stores/auth'
 import { useAppointmentStore } from '@/stores/appointment'
 
@@ -470,7 +587,11 @@ const apptStore = useAppointmentStore()
 
 const showBookingForm = ref(false)
 const statusFilter    = ref('ALL')
+const deleteTarget    = ref(null)   // appointment pending delete confirmation
+const deleteRole      = ref('')     // 'athlete' | 'trainer'
 const remarksMap      = reactive({})
+const feedbackMap     = reactive({})
+const feedbackEditId  = ref(null)
 
 const form = ref({
   serviceType: '', trainerId: '', date: '', time: '',
@@ -487,6 +608,71 @@ const editForm    = ref({
 const editErrors = ref({})
 
 const today = computed(() => new Date().toISOString().split('T')[0])
+
+// ── Trainer availability helpers ──────────────────────────────────────────────
+
+/** Availability slots for the currently selected trainer */
+const selectedTrainerSlots = computed(() => {
+  if (!form.value.trainerId) return []
+  const trainer = apptStore.trainers.find(t => t.userId === form.value.trainerId)
+  return trainer?.availabilitySlots || []
+})
+
+/** Day-of-week string (e.g. "MONDAY") for the currently chosen date */
+const selectedDateDay = computed(() => {
+  if (!form.value.date) return ''
+  const days = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY']
+  return days[new Date(form.value.date + 'T00:00:00').getDay()]
+})
+
+/** Slot matching the selected date's weekday */
+const slotForSelectedDay = computed(() => {
+  if (!selectedDateDay.value || !selectedTrainerSlots.value.length) return null
+  return selectedTrainerSlots.value.find(
+    s => s.day?.toUpperCase().startsWith(selectedDateDay.value.slice(0, 3))
+  ) || null
+})
+
+/**
+ * 30-minute time increments within the trainer's slot window for the selected day.
+ * e.g. slot 09:00–17:00 → ["09:00","09:30","10:00",…,"16:30"]
+ */
+const availableTimeSlots = computed(() => {
+  const slot = slotForSelectedDay.value
+  if (!slot) return []
+  const slots = []
+  const [sh, sm] = slot.startTime.split(':').map(Number)
+  const [eh, em] = slot.endTime.split(':').map(Number)
+  let cur = sh * 60 + sm
+  const end = eh * 60 + em
+  while (cur < end) {
+    const h = String(Math.floor(cur / 60)).padStart(2, '0')
+    const m = String(cur % 60).padStart(2, '0')
+    slots.push(`${h}:${m}`)
+    cur += 30
+  }
+  return slots
+})
+
+/** Reset time when trainer changes, validate day when date changes */
+function onDateChange() {
+  clearErr('date')
+  form.value.time = ''
+  if (form.value.trainerId && selectedDateDay.value && !slotForSelectedDay.value) {
+    const available = selectedTrainerSlots.value.map(s =>
+      s.day.charAt(0) + s.day.slice(1).toLowerCase()
+    ).join(', ')
+    errors.value.date = `Trainer not available on ${selectedDateDay.value.charAt(0) + selectedDateDay.value.slice(1).toLowerCase()}. Available: ${available}.`
+  }
+}
+
+// Reset time slot when trainer selection changes
+watch(() => form.value.trainerId, () => {
+  form.value.date = ''
+  form.value.time = ''
+  delete errors.value.date
+  delete errors.value.time
+})
 
 const statusFilters = [
   { value: 'ALL',       label: 'All' },
@@ -556,6 +742,29 @@ async function handleCancel(id) {
   await apptStore.cancelAppointment(id)
 }
 
+// ── Delete ────────────────────────────────────────────────────────────────────
+function confirmDeleteAthlete(appt) {
+  deleteTarget.value = appt
+  deleteRole.value   = 'athlete'
+}
+
+function confirmDeleteTrainer(appt) {
+  deleteTarget.value = appt
+  deleteRole.value   = 'trainer'
+}
+
+async function handleDelete() {
+  if (!deleteTarget.value) return
+  const id = deleteTarget.value.id
+  let ok = false
+  if (deleteRole.value === 'athlete') {
+    ok = await apptStore.deleteAsAthlete(id)
+  } else {
+    ok = await apptStore.deleteAsTrainer(id)
+  }
+  if (ok) deleteTarget.value = null
+}
+
 function openEdit(appt) {
   editingAppt.value = appt
   editForm.value = {
@@ -613,9 +822,29 @@ async function handleReject(id) {
   delete remarksMap[id]
 }
 
+function openFeedbackEdit(appt) {
+  feedbackEditId.value    = appt.id
+  feedbackMap[appt.id]    = appt.trainerFeedback || ''
+  apptStore.clearError()
+}
+
+async function handleSaveFeedback(id) {
+  const text = feedbackMap[id]?.trim()
+  if (!text) return
+  const result = await apptStore.addFeedback(id, text)
+  if (result) {
+    feedbackEditId.value = null
+    delete feedbackMap[id]
+  }
+}
+
 function selectTrainer(trainer) {
   form.value.trainerId = trainer.userId
+  form.value.date      = ''
+  form.value.time      = ''
   clearErr('trainerId')
+  delete errors.value.date
+  delete errors.value.time
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -691,6 +920,25 @@ function locationLabel(l) {
 }
 .dur-btn:hover  { border-color: var(--color-green-light); color: var(--color-green-light); }
 .dur-btn.active { background: rgba(180,255,0,0.12); border-color: var(--color-green-light); color: var(--color-green-light); }
+
+/* ── Availability hint ─────────────────────────────────────────────────────── */
+.avail-hint {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: rgba(180,255,0,0.06);
+  border: 1px solid rgba(180,255,0,0.2);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  font-size: 12px;
+}
+.avail-hint-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.avail-hint-slots { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.avail-hint-label { color: var(--color-muted); }
+.avail-hint-chip {
+  background: var(--color-bg-3);
+  border: 1px solid var(--color-border);
+  padding: 2px 8px; border-radius: 10px;
+  color: var(--color-green-light); font-size: 11px; font-weight: 600;
+}
 
 /* ── Trainer cards ─────────────────────────────────────────────────────────── */
 .trainer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
@@ -777,7 +1025,20 @@ function locationLabel(l) {
 .appt-sub    { font-size: 13px; color: var(--color-muted); margin-bottom: 5px; }
 .appt-meta   { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--color-muted); margin-bottom: 5px; }
 .appt-purpose { font-size: 13px; color: var(--color-text); }
-.appt-remarks { margin-top: 7px; font-size: 12px; color: var(--color-muted); background: var(--color-bg-3); padding: 7px 10px; border-radius: var(--radius-md); }
+.appt-remarks  { margin-top: 7px; font-size: 12px; color: var(--color-muted); background: var(--color-bg-3); padding: 7px 10px; border-radius: var(--radius-md); }
+.appt-feedback { margin-top: 7px; font-size: 12px; color: var(--color-text); background: rgba(180,255,0,0.05); border: 1px solid rgba(180,255,0,0.15); padding: 8px 10px; border-radius: var(--radius-md); }
+
+/* ── Trainer feedback section ──────────────────────────────────────────────── */
+.t-feedback-section { border-top: 1px solid var(--color-border); padding-top: 10px; }
+.t-feedback-display { display: flex; flex-direction: column; gap: 5px; }
+.t-feedback-header  { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; color: var(--color-green-light); }
+.btn-link { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--color-muted); text-decoration: underline; padding: 0; font-family: inherit; }
+.btn-link:hover { color: var(--color-text); }
+.t-feedback-text { font-size: 13px; color: var(--color-text); margin: 0; line-height: 1.5; }
+.t-feedback-form { display: flex; flex-direction: column; gap: 8px; }
+.t-feedback-label { font-size: 12px; font-weight: 600; color: var(--color-text); }
+.t-feedback-btns  { display: flex; gap: 8px; }
+.btn-feedback-save { background: rgba(180,255,0,0.12); border: 1px solid var(--color-green-light); color: var(--color-green-light); flex: 1; justify-content: center; }
 
 /* ── Loading / Empty ───────────────────────────────────────────────────────── */
 .load-row    { display: flex; align-items: center; gap: 10px; padding: 16px; color: var(--color-muted); font-size: 13px; }
@@ -815,9 +1076,25 @@ function locationLabel(l) {
 .t-remarks   { font-size: 12px; color: var(--color-muted); background: var(--color-bg-3); padding: 8px 10px; border-radius: var(--radius-md); }
 
 /* ── Appointment action buttons ────────────────────────────────────────────── */
-.appt-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.btn-edit { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.35); color: #3b82f6; }
+.appt-actions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; align-items: center; margin-top: 4px; }
+.btn-edit   { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.35); color: #3b82f6; }
 .btn-edit:hover { background: rgba(59,130,246,0.18); }
+.btn-delete { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #ef4444; }
+.btn-delete:hover { background: rgba(239,68,68,0.15); }
+
+/* Trainer card delete row */
+.t-delete-row { padding: 8px 0 2px; border-top: 1px solid var(--color-border); margin-top: 6px; display: flex; justify-content: flex-end; }
+.btn-delete-sm { background: none; border: none; cursor: pointer; font-size: 12px; color: var(--color-muted); padding: 4px 8px; border-radius: var(--radius-sm); transition: all var(--transition); }
+.btn-delete-sm:hover { color: #ef4444; background: rgba(239,68,68,0.08); }
+
+/* Delete modal */
+.modal-small .modal-body  { display: flex; flex-direction: column; gap: 10px; }
+.modal-small .modal-body p { font-size: 14px; color: var(--color-text-dim); margin: 0; }
+.delete-preview { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--color-bg-3); border-radius: var(--radius-sm); font-size: 13px; color: var(--color-text); flex-wrap: wrap; }
+.delete-warning { font-size: 12px; color: var(--color-error) !important; }
+.btn-danger { background: var(--color-error, #ef4444); color: #fff; border: none; }
+.btn-danger:hover:not(:disabled) { opacity: 0.85; }
+.btn-danger:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* ── Edit Modal ─────────────────────────────────────────────────────────────── */
 .modal-overlay {

@@ -64,18 +64,22 @@
               <p v-if="errors.rugbyPosition" class="field-error">{{ errors.rugbyPosition }}</p>
             </div>
 
-            <!-- Goal -->
-            <div class="form-group" :class="{ 'has-error': errors.goal }">
-              <label class="form-label">Nutrition Goal <span class="req">*</span></label>
+            <!-- Goals (multi-select) -->
+            <div class="form-group" :class="{ 'has-error': errors.goals }">
+              <label class="form-label">
+                Nutrition Goals <span class="req">*</span>
+                <span class="label-hint">Select one or more</span>
+              </label>
               <div class="goal-selector">
                 <button v-for="g in goals" :key="g.value" type="button"
-                  class="goal-btn" :class="{ active: form.goal === g.value }"
-                  @click="form.goal = g.value; clearError('goal')">
+                  class="goal-btn" :class="{ active: form.goals.includes(g.value) }"
+                  @click="toggleGoal(g.value)">
                   <span class="goal-icon">{{ g.icon }}</span>
                   <span class="goal-label">{{ g.label }}</span>
+                  <span v-if="form.goals.includes(g.value)" class="goal-tick">✓</span>
                 </button>
               </div>
-              <p v-if="errors.goal" class="field-error">{{ errors.goal }}</p>
+              <p v-if="errors.goals" class="field-error">{{ errors.goals }}</p>
             </div>
 
             <!-- Physical Stats -->
@@ -236,7 +240,7 @@
                   <span v-if="plan.isActive" class="badge-active">ACTIVE</span>
                 </div>
                 <p class="plan-item-meta">
-                  {{ plan.rugbyPosition }} · {{ goalLabel(plan.goal) }} · {{ dietLabel(plan.dietaryPreference) }}
+                  {{ plan.rugbyPosition }} · {{ goalsLabel(plan.goals) }} · {{ dietLabel(plan.dietaryPreference) }}
                 </p>
                 <!-- Progress bar -->
                 <div class="plan-item-progress" v-if="plan.completedItems && plan.completedItems.length > 0">
@@ -248,7 +252,10 @@
                 <p class="plan-item-date">{{ formatDate(plan.createdAt) }}</p>
               </div>
 
-              <button class="delete-btn" @click.stop="confirmDelete(plan)" title="Delete plan">🗑️</button>
+              <div class="plan-item-actions">
+                <button class="icon-btn" @click.stop="openCopyModal(plan)" title="Copy plan">📋</button>
+                <button class="icon-btn icon-btn-danger" @click.stop="confirmDelete(plan)" title="Delete plan">🗑️</button>
+              </div>
             </div>
 
             <!-- Pagination controls -->
@@ -308,7 +315,7 @@
 
               <div class="plan-tags" v-if="!editMode">
                 <span class="tag tag-position">🏉 {{ mealStore.activePlan.rugbyPosition }}</span>
-                <span class="tag tag-goal">{{ goalLabel(mealStore.activePlan.goal) }}</span>
+                <span class="tag tag-goal">{{ goalsLabel(mealStore.activePlan.goals) }}</span>
                 <span class="tag tag-diet">{{ dietLabel(mealStore.activePlan.dietaryPreference) }}</span>
                 <span class="tag tag-meals">{{ mealStore.activePlan.mealsPerDay }} meals/day</span>
                 <span class="tag tag-phase">{{ phaseLabel(mealStore.activePlan.trainingPhase) }}</span>
@@ -408,6 +415,39 @@
               </div>
             </div>
 
+            <!-- ── Weekly Nutrition Summary Table ──────────────────── -->
+            <div class="nutrition-table-section">
+              <h3 class="nutrition-table-title">📊 Weekly Nutrition Summary</h3>
+              <div v-if="nutritionTableRows(mealStore.activePlan.generatedPlan).length > 0" class="nutrition-table-wrap">
+                <table class="nutrition-table">
+                  <thead>
+                    <tr>
+                      <th>Day</th>
+                      <th>Calories</th>
+                      <th>Protein</th>
+                      <th>Carbs</th>
+                      <th>Fat</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(row, i) in nutritionTableRows(mealStore.activePlan.generatedPlan)"
+                      :key="i"
+                      :class="{ 'row-total': row.isTotal }">
+                      <td class="col-day">{{ row.day }}</td>
+                      <td class="col-num">{{ row.calories }}</td>
+                      <td class="col-num">{{ row.protein }}</td>
+                      <td class="col-num">{{ row.carbs }}</td>
+                      <td class="col-num">{{ row.fat }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p v-else class="nutrition-table-empty">
+                No nutrition summary table found. The AI plan may not have included macro data — try regenerating.
+              </p>
+            </div>
+
             <!-- Meal checklist grouped by day -->
             <div class="checklist-grouped">
               <div
@@ -458,6 +498,47 @@
       </div>
     </div>
 
+    <!-- Copy meal plan modal -->
+    <div v-if="copySource" class="modal-overlay" @click.self="closeCopyModal">
+      <div class="modal modal-copy">
+        <h3>📋 Copy Meal Plan</h3>
+        <p>Duplicating <strong>"{{ copySource.planName }}"</strong>. Enter a name for the new copy.</p>
+
+        <!-- Plan picker -->
+        <div class="copy-plan-list">
+          <p class="copy-section-label">Or copy a different plan:</p>
+          <div
+            v-for="p in mealStore.plans"
+            :key="p.id"
+            class="copy-plan-item"
+            :class="{ selected: copySource.id === p.id }"
+            @click="selectCopySource(p)">
+            <span class="copy-plan-name">{{ p.planName }}</span>
+            <span class="copy-plan-meta">{{ p.rugbyPosition }} · {{ p.mealsPerDay }} meals/day</span>
+          </div>
+        </div>
+
+        <div class="copy-name-row">
+          <label class="form-label">New plan name</label>
+          <input
+            v-model="copyName"
+            class="form-input"
+            placeholder="e.g. In-Season Nutrition Copy"
+            @keydown.enter="handleCopy"
+            maxlength="80" />
+          <p v-if="copyError" class="copy-error">{{ copyError }}</p>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="closeCopyModal">Cancel</button>
+          <button class="btn btn-primary" :disabled="copying" @click="handleCopy">
+            <span v-if="copying" class="spinner-sm"></span>
+            {{ copying ? 'Copying…' : 'Copy Plan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -494,7 +575,7 @@ const activityLevels = [
 const form = ref({
   planName:          '',
   rugbyPosition:     '',
-  goal:              '',
+  goals:             [],
   weight:            null,
   height:            null,
   age:               null,
@@ -509,6 +590,12 @@ const form = ref({
 
 const errors       = ref({})
 const deleteTarget = ref(null)
+
+// ── Copy modal state ──────────────────────────────────────────────────────────
+const copySource = ref(null)
+const copyName   = ref('')
+const copying    = ref(false)
+const copyError  = ref('')
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 const activeTab = ref('plan')
@@ -622,6 +709,96 @@ function progressPercent(plan) {
   return Math.round((done / total) * 100)
 }
 
+/**
+ * Parse the AI-generated markdown for a "Weekly Nutrition Summary" table.
+ * Looks for a markdown table section with columns: Day | Calories | Protein | Carbs | Fat
+ * Returns an array of row objects; the last row is flagged isTotal if it matches Total/Average.
+ *
+ * The AI typically outputs lines like:
+ *   | Day 1 (Monday) | 2500 | 150g | 280g | 75g |
+ *   | **Total**       | 17500 | 1050g | 1960g | 525g |
+ */
+function nutritionTableRows(text) {
+  if (!text) return []
+
+  const rows = []
+  const lines = text.split('\n')
+
+  // Find the nutrition summary section — look for a header that mentions it
+  let inSummarySection = false
+  let inTable = false
+
+  for (const raw of lines) {
+    const line = raw.trim()
+
+    // Detect entry into a summary section heading
+    if (/weekly\s+nutrition\s+summ/i.test(line) || /daily\s+nutrition\s+summ/i.test(line)) {
+      inSummarySection = true
+      continue
+    }
+
+    // If we hit another ## heading after entering the section, we've left it
+    if (inSummarySection && /^##\s/.test(line)) {
+      break
+    }
+
+    // We're now inside the section — look for table rows (lines starting with |)
+    if (!line.startsWith('|')) continue
+
+    // Skip separator lines (e.g. |---|---|)
+    if (/^\|[\s\-:|]+\|/.test(line)) {
+      inTable = true
+      continue
+    }
+
+    // Parse the cell values
+    const cells = line.split('|').map(c => c.replace(/\*\*/g, '').trim()).filter(Boolean)
+    if (cells.length < 2) continue
+
+    // Skip the header row (contains "Day" or "Calories")
+    const firstCell = cells[0].toLowerCase()
+    if (firstCell === 'day' || firstCell.includes('calorie')) continue
+
+    // Determine if this is a total/average row
+    const isTotal = /total|average|avg/i.test(firstCell)
+
+    rows.push({
+      day:      cells[0] || '–',
+      calories: cells[1] || '–',
+      protein:  cells[2] || '–',
+      carbs:    cells[3] || '–',
+      fat:      cells[4] || '–',
+      isTotal
+    })
+  }
+
+  // Fallback: if we found no summary section header, try parsing any table
+  // that looks like it has at least 5 columns starting with a Day reference
+  if (rows.length === 0) {
+    for (const raw of lines) {
+      const line = raw.trim()
+      if (!line.startsWith('|')) continue
+      if (/^\|[\s\-:|]+\|/.test(line)) continue
+      const cells = line.split('|').map(c => c.replace(/\*\*/g, '').trim()).filter(Boolean)
+      if (cells.length < 5) continue
+      const first = cells[0].toLowerCase()
+      if (first === 'day' || first.includes('calorie')) continue
+      // Only include rows that seem to reference days or totals
+      if (!(/day\s*\d/i.test(first) || /mon|tue|wed|thu|fri|sat|sun/i.test(first) || /total|avg/i.test(first))) continue
+      rows.push({
+        day:      cells[0],
+        calories: cells[1],
+        protein:  cells[2],
+        carbs:    cells[3],
+        fat:      cells[4],
+        isTotal: /total|average|avg/i.test(cells[0])
+      })
+    }
+  }
+
+  return rows
+}
+
 // ── Select plan from list ────────────────────────────────────────────────────
 function selectPlan(plan) {
   mealStore.setActivePlan(plan)
@@ -674,19 +851,20 @@ onMounted(async () => {
 
 // ── Calorie estimate preview ─────────────────────────────────────────────────
 const estimatedCalories = computed(() => {
-  const { weight, height, age, goal } = form.value
+  const { weight, height, age, goals } = form.value
   if (!weight || !height || !age) return null
   const bmr  = (10 * weight) + (6.25 * height) - (5 * age) + 5
   const tdee = Math.round(bmr * 1.725)
   const adjustments = { MUSCLE_GAIN: 400, WEIGHT_LOSS: -400, PERFORMANCE: 200, MAINTAIN: 0 }
-  return tdee + (adjustments[goal] || 0)
+  const primaryGoal = goals[0] || ''
+  return tdee + (adjustments[primaryGoal] || 0)
 })
 
 // ── Validation ───────────────────────────────────────────────────────────────
 function validate() {
   errors.value = {}
-  if (!form.value.rugbyPosition)     errors.value.rugbyPosition     = 'Please select your rugby position.'
-  if (!form.value.goal)              errors.value.goal              = 'Please select a nutrition goal.'
+  if (!form.value.rugbyPosition)          errors.value.rugbyPosition     = 'Please select your rugby position.'
+  if (!form.value.goals.length)           errors.value.goals             = 'Please select at least one nutrition goal.'
   if (!form.value.weight)            errors.value.weight            = 'Weight is required.'
   if (!form.value.height)            errors.value.height            = 'Height is required.'
   if (!form.value.age)               errors.value.age               = 'Age is required.'
@@ -722,10 +900,60 @@ async function handleDelete() {
   deleteTarget.value = null
 }
 
+// ── Copy ──────────────────────────────────────────────────────────────────────
+function openCopyModal(plan) {
+  copySource.value = plan
+  copyName.value   = plan.planName + ' (Copy)'
+  copyError.value  = ''
+}
+
+function selectCopySource(plan) {
+  copySource.value = plan
+  copyName.value   = plan.planName + ' (Copy)'
+  copyError.value  = ''
+}
+
+function closeCopyModal() {
+  copySource.value = null
+  copyName.value   = ''
+  copyError.value  = ''
+}
+
+async function handleCopy() {
+  const name = copyName.value.trim()
+  if (!name) { copyError.value = 'Please enter a name for the copied plan.'; return }
+  copying.value   = true
+  copyError.value = ''
+  const result = await mealStore.copyPlan(copySource.value.id, name)
+  copying.value = false
+  if (result) {
+    closeCopyModal()
+    mealStore.setActivePlan(result)
+    currentPage.value = 1
+  } else {
+    copyError.value = mealStore.error || 'Failed to copy plan.'
+  }
+}
+
+// ── Goal toggle (multi-select) ────────────────────────────────────────────────
+function toggleGoal(value) {
+  const idx = form.value.goals.indexOf(value)
+  if (idx === -1) form.value.goals.push(value)
+  else            form.value.goals.splice(idx, 1)
+  if (errors.value.goals) delete errors.value.goals
+  mealStore.clearError()
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function goalLabel(goal) {
   const map = { MUSCLE_GAIN: '💪 Muscle Gain', WEIGHT_LOSS: '🔥 Weight Loss', MAINTAIN: '⚖️ Maintain', PERFORMANCE: '⚡ Performance' }
   return map[goal] || goal
+}
+
+function goalsLabel(goals) {
+  if (!goals || goals.length === 0) return '—'
+  const map = { MUSCLE_GAIN: '💪 Muscle Gain', WEIGHT_LOSS: '🔥 Weight Loss', MAINTAIN: '⚖️ Maintain', PERFORMANCE: '⚡ Performance' }
+  return goals.map(g => map[g] || g).join(' + ')
 }
 
 function dietLabel(diet) {
@@ -807,6 +1035,8 @@ function renderMarkdown(text) {
 .form-group.has-error .form-input,
 .form-group.has-error .form-select { border-color: var(--color-error); }
 
+.label-hint { font-size: 11px; font-weight: 400; color: var(--color-muted); }
+
 /* Goal selector */
 .goal-selector  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .goal-btn {
@@ -819,7 +1049,8 @@ function renderMarkdown(text) {
 .goal-btn:hover  { border-color: var(--color-green); color: var(--color-green-light); }
 .goal-btn.active { background: var(--color-green-dim); border-color: var(--color-green); color: var(--color-green-light); }
 .goal-icon       { font-size: 18px; }
-.goal-label      { font-size: 12px; font-weight: 500; }
+.goal-label      { font-size: 12px; font-weight: 500; flex: 1; }
+.goal-tick       { font-size: 11px; font-weight: 700; color: var(--color-green-light); }
 
 /* Diet selector */
 .diet-selector  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -894,8 +1125,10 @@ function renderMarkdown(text) {
 .progress-bar-fill  { height: 100%; background: var(--color-green); border-radius: 99px; transition: width 0.3s ease; }
 .progress-label { font-size: 10px; color: var(--color-muted); white-space: nowrap; }
 
-.delete-btn       { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: var(--radius-sm); opacity: 0.45; transition: opacity var(--transition); flex-shrink: 0; }
-.delete-btn:hover { opacity: 1; }
+.plan-item-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+.icon-btn { background: none; border: none; cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: var(--radius-sm); opacity: 0.45; transition: opacity var(--transition); }
+.icon-btn:hover { opacity: 1; }
+.icon-btn-danger:hover { opacity: 1; color: var(--color-error); }
 
 /* ── Pagination ──────────────────────────────────────────────── */
 .pagination {
@@ -948,6 +1181,7 @@ function renderMarkdown(text) {
   display: flex; align-items: center; justify-content: center; font-size: 30px;
   animation: pulse 1.5s ease-in-out infinite;
 }
+@keyframes spin   { to { transform: rotate(360deg); } }
 @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.1);opacity:0.7} }
 
 .progress-dots { display: flex; gap: 6px; }
@@ -999,6 +1233,9 @@ function renderMarkdown(text) {
 .btn-save:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-danger    { background: var(--color-error); color: #fff; }
 .btn-danger:hover { opacity: 0.85; }
+.btn-primary   { background: var(--color-green); color: #fff; }
+.btn-primary:hover:not(:disabled) { opacity: 0.88; }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-sm        { padding: 5px 10px; font-size: 12px; }
 .active-indicator { font-size: 12.5px; color: var(--color-green-light); font-weight: 500; display: flex; align-items: center; gap: 4px; }
 
@@ -1057,6 +1294,51 @@ function renderMarkdown(text) {
 .progress-summary-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
 .progress-summary-sub   { font-size: 12.5px; color: var(--color-muted); margin-bottom: 8px; }
 .reset-btn { color: var(--color-muted); }
+
+/* ── Nutrition Summary Table ─────────────────────────────────── */
+.nutrition-table-section {
+  margin-bottom: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.nutrition-table-title {
+  font-size: 14px; font-weight: 700;
+  color: var(--color-text);
+  padding: 12px 16px 10px;
+  margin: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.nutrition-table-wrap { overflow-x: auto; }
+.nutrition-table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+.nutrition-table th {
+  background: var(--color-bg-3);
+  color: var(--color-muted);
+  font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px;
+  padding: 8px 12px; text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+.nutrition-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+.nutrition-table tbody tr:last-child td { border-bottom: none; }
+.nutrition-table tbody tr:hover td { background: var(--color-bg-3); }
+.nutrition-table .col-day { font-weight: 500; }
+.nutrition-table .col-num { color: var(--color-text); font-variant-numeric: tabular-nums; }
+.nutrition-table .row-total td {
+  background: rgba(180,255,0,0.06);
+  font-weight: 700;
+  color: var(--color-green-light);
+  border-top: 1px solid var(--color-border);
+}
+.nutrition-table-empty {
+  padding: 16px; font-size: 13px; color: var(--color-muted); margin: 0;
+}
 
 /* ── Grouped Checklist ───────────────────────────────────────── */
 .checklist-grouped { display: flex; flex-direction: column; gap: 16px; }
@@ -1124,6 +1406,19 @@ function renderMarkdown(text) {
 .modal h3      { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; }
 .modal p       { font-size: 14px; color: var(--color-text-dim); line-height: 1.6; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+
+/* Copy modal extras */
+.modal-copy    { max-width: 480px; }
+.copy-section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--color-muted); margin-bottom: 6px; }
+.copy-plan-list { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 6px; background: var(--color-bg-3); }
+.copy-plan-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: var(--radius-sm); cursor: pointer; transition: background var(--transition); }
+.copy-plan-item:hover { background: var(--color-surface); }
+.copy-plan-item.selected { background: var(--color-green-dim); border: 1px solid var(--color-green); }
+.copy-plan-name { font-size: 13px; font-weight: 500; color: var(--color-text); }
+.copy-plan-meta { font-size: 11px; color: var(--color-muted); }
+.copy-name-row  { display: flex; flex-direction: column; gap: 6px; }
+.copy-error     { font-size: 12px; color: var(--color-error); }
+.spinner-sm     { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
 
 /* ── Transitions ─────────────────────────────────────────────── */
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }

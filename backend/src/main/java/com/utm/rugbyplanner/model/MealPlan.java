@@ -21,7 +21,7 @@ import java.util.List;
  *
  * Inputs used to generate the plan:
  *   - rugbyPosition     → affects caloric demands (props vs backs)
- *   - goal              → MUSCLE_GAIN | WEIGHT_LOSS | MAINTAIN | PERFORMANCE
+ *   - goals             → one or more of: MUSCLE_GAIN | WEIGHT_LOSS | MAINTAIN | PERFORMANCE
  *   - weight, height, age → used to estimate TDEE
  *   - dietaryPreference → HALAL | VEGETARIAN | VEGAN | NO_RESTRICTION
  *   - allergies         → free text — AI excludes allergen ingredients
@@ -44,8 +44,8 @@ public class MealPlan {
     private String planName;
 
     // ── Input parameters sent to Ollama ──────────────────────────────────
-    private String  rugbyPosition;     // "Prop", "Flanker", "Fullback", etc.
-    private String  goal;              // "MUSCLE_GAIN" | "WEIGHT_LOSS" | "MAINTAIN" | "PERFORMANCE"
+    private String       rugbyPosition;  // "Prop", "Flanker", "Fullback", etc.
+    private List<String> goals;         // e.g. ["MUSCLE_GAIN", "PERFORMANCE"]
     private Integer weight;            // kg
     private Integer height;            // cm
     private Integer age;               // years

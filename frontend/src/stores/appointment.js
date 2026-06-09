@@ -174,6 +174,67 @@ export const useAppointmentStore = defineStore('appointment', () => {
     }
   }
 
+  // ── UC012: Add post-session feedback ─────────────────────────────────────
+
+  async function addFeedback(id, feedbackText) {
+    saving.value = true
+    error.value  = null
+    try {
+      const response = await appointmentService.addFeedback(id, feedbackText)
+      if (response.success) {
+        const idx = appointments.value.findIndex(a => a.id === id)
+        if (idx !== -1) appointments.value[idx] = response.data
+        successMsg.value = 'Feedback saved.'
+        return response.data
+      }
+      error.value = response.message || 'Failed to save feedback.'
+      return null
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to save feedback. Please try again.'
+      return null
+    } finally {
+      saving.value = false
+    }
+  }
+
+  // ── Delete (athlete) ──────────────────────────────────────────────────────
+
+  async function deleteAsAthlete(id) {
+    error.value = null
+    try {
+      const response = await appointmentService.deleteAsAthlete(id)
+      if (response.success) {
+        appointments.value = appointments.value.filter(a => a.id !== id)
+        successMsg.value = 'Appointment deleted.'
+        return true
+      }
+      error.value = response.message || 'Failed to delete.'
+      return false
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to delete. Please try again.'
+      return false
+    }
+  }
+
+  // ── Delete (trainer) ──────────────────────────────────────────────────────
+
+  async function deleteAsTrainer(id) {
+    error.value = null
+    try {
+      const response = await appointmentService.deleteAsTrainer(id)
+      if (response.success) {
+        appointments.value = appointments.value.filter(a => a.id !== id)
+        successMsg.value = 'Appointment deleted.'
+        return true
+      }
+      error.value = response.message || 'Failed to delete.'
+      return false
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to delete. Please try again.'
+      return false
+    }
+  }
+
   function clearError()      { error.value = null }
   function clearSuccess()    { successMsg.value = null }
 
@@ -182,7 +243,8 @@ export const useAppointmentStore = defineStore('appointment', () => {
     loading, loadingTrainers, saving, error, successMsg,
     fetchTrainers, createAppointment,
     fetchAthleteAppointments, editAppointment, cancelAppointment,
+    deleteAsAthlete, deleteAsTrainer,
     fetchTrainerAppointments, approveAppointment, rejectAppointment,
-    clearError, clearSuccess
+    addFeedback, clearError, clearSuccess
   }
 })

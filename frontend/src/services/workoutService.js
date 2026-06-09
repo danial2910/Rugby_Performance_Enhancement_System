@@ -46,6 +46,11 @@ const workoutService = {
   async deletePlan(id) {
     const { data } = await http.delete(`/workout/plans/${id}`)
     return data
+  },
+
+  async copyPlan(id, newName) {
+    const { data } = await http.post(`/workout/plans/${id}/copy`, { newName })
+    return data
   }
 }
 

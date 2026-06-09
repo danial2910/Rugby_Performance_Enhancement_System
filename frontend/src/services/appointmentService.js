@@ -9,6 +9,7 @@
  * GET  /api/appointments/trainer         → UC012 trainer's appointments
  * PUT  /api/appointments/:id/approve     → UC012 approve
  * PUT  /api/appointments/:id/reject      → UC012 reject
+ * PUT  /api/appointments/:id/feedback    → UC012 post-session feedback
  */
 import http from './http'
 
@@ -50,6 +51,21 @@ const appointmentService = {
 
   async rejectAppointment(id, trainerRemarks = '') {
     const { data } = await http.put(`/appointments/${id}/reject`, { trainerRemarks })
+    return data
+  },
+
+  async addFeedback(id, trainerFeedback) {
+    const { data } = await http.put(`/appointments/${id}/feedback`, { trainerFeedback })
+    return data
+  },
+
+  async deleteAsAthlete(id) {
+    const { data } = await http.delete(`/appointments/${id}/athlete`)
+    return data
+  },
+
+  async deleteAsTrainer(id) {
+    const { data } = await http.delete(`/appointments/${id}/trainer`)
     return data
   }
 }

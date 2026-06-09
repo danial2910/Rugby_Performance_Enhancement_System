@@ -1,6 +1,7 @@
 package com.utm.rugbyplanner.controller;
 
 import com.utm.rugbyplanner.dto.ApiResponse;
+import com.utm.rugbyplanner.dto.CopyPlanRequest;
 import com.utm.rugbyplanner.dto.PlanEditRequest;
 import com.utm.rugbyplanner.dto.PlanProgressRequest;
 import com.utm.rugbyplanner.dto.WorkoutPlanRequest;
@@ -160,6 +161,28 @@ public class WorkoutPlanController {
         WorkoutPlanResponse plan =
                 workoutPlanService.activatePlan(userDetails.getUsername(), id);
         return ResponseEntity.ok(ApiResponse.success("Plan set as currently active.", plan));
+    }
+
+    // ── UC004 AF2: Copy a plan ────────────────────────────────────────────────
+
+    /**
+     * POST /api/workout/plans/{id}/copy
+     *
+     * Duplicates the given plan with a new name. The copy is inactive and
+     * has an empty progress list.
+     * 201 Created → new WorkoutPlanResponse
+     */
+    @PostMapping("/plans/{id}/copy")
+    public ResponseEntity<ApiResponse<WorkoutPlanResponse>> copyPlan(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String id,
+            @Valid @RequestBody CopyPlanRequest request) {
+
+        WorkoutPlanResponse plan =
+                workoutPlanService.copyPlan(userDetails.getUsername(), id, request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Workout plan copied successfully.", plan));
     }
 
     // ── UC005: Update progress ────────────────────────────────────────────────

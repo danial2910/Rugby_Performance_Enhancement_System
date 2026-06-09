@@ -36,6 +36,7 @@ public class AppointmentResponse {
     // ── Status ─────────────────────────────────────────────────────────────
     private String status;
     private String trainerRemarks;
+    private String trainerFeedback;
 
     // ── Timestamps ─────────────────────────────────────────────────────────
     private LocalDateTime createdAt;

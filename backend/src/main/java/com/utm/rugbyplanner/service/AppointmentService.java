@@ -208,6 +208,41 @@ public class AppointmentService {
                 .collect(Collectors.toList());
     }
 
+    // ── Delete appointment (athlete — own record) ─────────────────────────────
+
+    /**
+     * Permanently removes an appointment record that belongs to this athlete.
+     * The athlete may delete any appointment regardless of status, so they can
+     * clean up old CANCELLED, REJECTED, or past APPROVED sessions.
+     */
+    public void deleteAppointmentAsAthlete(String athleteUsername, String appointmentId) {
+        User athlete = findUser(athleteUsername);
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found."));
+        if (!appointment.getAthleteId().equals(athlete.getId())) {
+            throw new RuntimeException("You can only delete your own appointments.");
+        }
+        appointmentRepository.delete(appointment);
+        log.info("Appointment deleted by athlete — id: {}, athlete: {}", appointmentId, athleteUsername);
+    }
+
+    // ── Delete appointment (trainer — own record) ─────────────────────────────
+
+    /**
+     * Permanently removes an appointment record that belongs to this trainer.
+     * The trainer may delete any appointment regardless of status.
+     */
+    public void deleteAppointmentAsTrainer(String trainerUsername, String appointmentId) {
+        User trainer = findUser(trainerUsername);
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found."));
+        if (!appointment.getTrainerId().equals(trainer.getId())) {
+            throw new RuntimeException("You can only delete appointments assigned to you.");
+        }
+        appointmentRepository.delete(appointment);
+        log.info("Appointment deleted by trainer — id: {}, trainer: {}", appointmentId, trainerUsername);
+    }
+
     // ── UC009: Cancel appointment (athlete) ───────────────────────────────────
 
     public AppointmentResponse cancelAppointment(String athleteUsername, String appointmentId) {
@@ -317,6 +352,34 @@ public class AppointmentService {
         return toResponse(saved, athleteUser, trainer);
     }
 
+    // ── UC012: Add post-session feedback ─────────────────────────────────────
+
+    /**
+     * Trainer adds feedback/comments on an APPROVED appointment after the session.
+     * Can be called multiple times — each call overwrites the previous feedback.
+     */
+    public AppointmentResponse addFeedback(String trainerUsername, String appointmentId,
+                                           AppointmentFeedbackRequest req) {
+        User trainer = findUser(trainerUsername);
+
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found."));
+
+        if (!appointment.getTrainerId().equals(trainer.getId())) {
+            throw new RuntimeException("You can only add feedback to your own appointments.");
+        }
+        if (!"APPROVED".equals(appointment.getStatus())) {
+            throw new RuntimeException("Feedback can only be added to APPROVED appointments.");
+        }
+
+        appointment.setTrainerFeedback(req.getTrainerFeedback());
+        Appointment saved = appointmentRepository.save(appointment);
+        log.info("UC012 Trainer feedback added — id: {}, trainer: {}", appointmentId, trainerUsername);
+
+        User athleteUser = userRepository.findById(saved.getAthleteId()).orElse(null);
+        return toResponse(saved, athleteUser, trainer);
+    }
+
     // ── Mappers ───────────────────────────────────────────────────────────────
 
     private AppointmentResponse toResponse(Appointment a, User athlete, User trainer) {
@@ -339,6 +402,7 @@ public class AppointmentService {
                 .specialRequirements(a.getSpecialRequirements())
                 .status(a.getStatus())
                 .trainerRemarks(a.getTrainerRemarks())
+                .trainerFeedback(a.getTrainerFeedback())
                 .createdAt(a.getCreatedAt())
                 .updatedAt(a.getUpdatedAt())
                 .build();

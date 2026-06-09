@@ -49,6 +49,18 @@
       </div>
     </transition>
 
+    <!-- ── Trainer Feedback Notification Banner ──────────────────────────────── -->
+    <transition name="slide-down">
+      <div v-if="feedbackNotifications.length > 0" class="feedback-banner">
+        <div class="feedback-banner-icon">💬</div>
+        <div class="feedback-banner-text">
+          <strong>You have {{ feedbackNotifications.length }} new trainer feedback{{ feedbackNotifications.length > 1 ? 's' : '' }} on your appointment{{ feedbackNotifications.length > 1 ? 's' : '' }}.</strong>
+          <span> Scroll down to see what your trainer said.</span>
+        </div>
+        <a href="#feedback-section" class="feedback-banner-link">View Feedback ↓</a>
+      </div>
+    </transition>
+
     <!-- ── Loading state ──────────────────────────────────────────────────── -->
     <div v-if="loading" class="loading-grid">
       <div class="skeleton-card" v-for="n in 2" :key="n"></div>
@@ -388,6 +400,44 @@
 
       </div><!-- end updates-appt-row -->
 
+      <!-- ── Trainer Feedback Cards ─────────────────────────────────────────── -->
+      <div id="feedback-section" v-if="feedbackNotifications.length > 0" class="feedback-section">
+        <div class="section-header">
+          <h2 class="section-title">
+            <span class="section-icon">💬</span> Trainer Feedback
+          </h2>
+          <p class="section-sub">Your trainer has left feedback on your completed sessions.</p>
+        </div>
+        <div class="feedback-grid">
+          <div
+            v-for="appt in feedbackNotifications"
+            :key="appt.id"
+            class="feedback-card">
+            <div class="feedback-card-top">
+              <div class="feedback-service-badge">{{ serviceLabel(appt.serviceType) }}</div>
+              <span class="feedback-date">{{ formatApptDate(appt.date) }}</span>
+            </div>
+            <div class="feedback-trainer-row">
+              <div class="feedback-avatar">{{ initials(appt.trainerName) }}</div>
+              <div class="feedback-trainer-info">
+                <div class="feedback-trainer-name">{{ appt.trainerName }}</div>
+                <div class="feedback-meta">🕐 {{ appt.time }} · ⏱ {{ appt.duration }} min · {{ appt.location === 'GYM' ? '🏋️ Gym' : '💻 Online' }}</div>
+              </div>
+            </div>
+            <div class="feedback-message-box">
+              <div class="feedback-message-header">
+                <span class="feedback-message-icon">📝</span>
+                <span class="feedback-message-label">Trainer Feedback</span>
+              </div>
+              <p class="feedback-message-text">{{ appt.trainerFeedback }}</p>
+            </div>
+            <router-link to="/appointments" class="feedback-view-btn">
+              View in Appointments →
+            </router-link>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Quick Links (when no active plans or no trainer updates) ──────── -->
       <div v-if="!activeWorkout || !activeMeal" class="quick-links">
         <h2 class="section-title">Get Started</h2>
@@ -495,12 +545,16 @@ const upcomingAppointments = computed(() => {
   return apptStore.appointments
     .filter(a => a.status === 'APPROVED' && a.date >= todayStr)
     .sort((a, b) => {
-      // Sort by date then time ascending
       const da = new Date(`${a.date}T${a.time}:00`)
       const db = new Date(`${b.date}T${b.time}:00`)
       return da - db
     })
 })
+
+// ── Trainer feedback notifications ───────────────────────────────────────────
+const feedbackNotifications = computed(() =>
+  apptStore.appointments.filter(a => a.status === 'APPROVED' && a.trainerFeedback)
+)
 
 // ── Countdown helpers ──────────────────────────────────────────────────────────
 
@@ -1172,4 +1226,80 @@ function phaseLabel(phase) {
 /* ── Transitions ───────────────────────────────────────────────────────────── */
 .slide-down-enter-active { transition: all 0.3s ease; }
 .slide-down-enter-from   { opacity: 0; transform: translateY(-8px); }
+
+/* ── Trainer Feedback Banner ─────────────────────────────────────────────────── */
+.feedback-banner {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.feedback-banner-icon { font-size: 20px; flex-shrink: 0; }
+.feedback-banner-text { flex: 1; font-size: 14px; color: var(--color-text); }
+.feedback-banner-text strong { color: #3b82f6; }
+.feedback-banner-link { font-size: 13px; font-weight: 600; color: #3b82f6; text-decoration: none; white-space: nowrap; }
+.feedback-banner-link:hover { text-decoration: underline; }
+
+/* ── Trainer Feedback Section ────────────────────────────────────────────────── */
+.feedback-section { display: flex; flex-direction: column; gap: 16px; }
+
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.feedback-card {
+  background: var(--color-bg-2);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-left: 4px solid #3b82f6;
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.feedback-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.feedback-service-badge {
+  font-size: 11px; font-weight: 700;
+  background: rgba(59,130,246,0.12); color: #3b82f6;
+  padding: 3px 8px; border-radius: 20px;
+}
+.feedback-date { font-size: 11px; color: var(--color-muted); margin-left: auto; }
+
+.feedback-trainer-row { display: flex; align-items: center; gap: 12px; }
+.feedback-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--color-bg-3); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #3b82f6; flex-shrink: 0; }
+.feedback-trainer-info { flex: 1; min-width: 0; }
+.feedback-trainer-name { font-size: 14px; font-weight: 700; color: var(--color-text); }
+.feedback-meta { font-size: 11px; color: var(--color-muted); margin-top: 2px; }
+
+.feedback-message-box {
+  background: rgba(59,130,246,0.06);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+.feedback-message-header {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 700; color: #3b82f6;
+  margin-bottom: 8px;
+}
+.feedback-message-icon { font-size: 14px; }
+.feedback-message-label {}
+.feedback-message-text { margin: 0; font-size: 13px; color: var(--color-text); line-height: 1.6; }
+
+.feedback-view-btn {
+  align-self: flex-start;
+  font-size: 12px; font-weight: 600;
+  color: #3b82f6; text-decoration: none;
+  padding: 6px 12px;
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+.feedback-view-btn:hover { background: rgba(59,130,246,0.08); }
+
+/* ── Slide-down transition ──────────────────────────────────────────────────── */
+.slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }
+.slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-10px); }
 </style>

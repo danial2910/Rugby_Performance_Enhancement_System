@@ -63,6 +63,9 @@ public class Appointment {
     /** Trainer fills this when approving or rejecting */
     private String trainerRemarks;
 
+    /** Post-session feedback / comments added by the trainer after the appointment */
+    private String trainerFeedback;
+
     @CreatedDate
     private LocalDateTime createdAt;
 

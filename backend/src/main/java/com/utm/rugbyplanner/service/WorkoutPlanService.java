@@ -1,5 +1,6 @@
 package com.utm.rugbyplanner.service;
 
+import com.utm.rugbyplanner.dto.CopyPlanRequest;
 import com.utm.rugbyplanner.dto.PlanEditRequest;
 import com.utm.rugbyplanner.dto.PlanProgressRequest;
 import com.utm.rugbyplanner.dto.WorkoutPlanRequest;
@@ -143,6 +144,43 @@ public class WorkoutPlanService {
         plan.setActive(true);
         WorkoutPlan saved = workoutPlanRepository.save(plan);
         log.info("UC005 Workout plan set as active — id: {}", planId);
+        return toResponse(saved);
+    }
+
+    // ── UC004 AF2: Copy an existing plan ─────────────────────────────────────
+
+    /**
+     * Duplicates a workout plan owned by this user, saving it under a new name.
+     * The copy starts inactive with an empty progress list.
+     */
+    public WorkoutPlanResponse copyPlan(String username, String planId, CopyPlanRequest req) {
+        User user = findUser(username);
+        WorkoutPlan source = workoutPlanRepository
+                .findByIdAndUserId(planId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Workout plan not found."));
+
+        WorkoutPlan copy = WorkoutPlan.builder()
+                .userId(user.getId())
+                .planName(req.getNewName())
+                .rugbyPosition(source.getRugbyPosition())
+                .goal(source.getGoal())
+                .trainingLevel(source.getTrainingLevel())
+                .weight(source.getWeight())
+                .height(source.getHeight())
+                .age(source.getAge())
+                .injuryNotes(source.getInjuryNotes())
+                .sessionsPerWeek(source.getSessionsPerWeek())
+                .trainingPhase(source.getTrainingPhase())
+                .availableEquipment(source.getAvailableEquipment())
+                .focusArea(source.getFocusArea())
+                .generatedPlan(source.getGeneratedPlan())
+                // copy starts fresh — not active, no trainer note, no progress
+                .isActive(false)
+                .completedItems(new java.util.ArrayList<>())
+                .build();
+
+        WorkoutPlan saved = workoutPlanRepository.save(copy);
+        log.info("UC004 AF2 Workout plan copied — source: {}, new: {}", planId, saved.getId());
         return toResponse(saved);
     }
 
