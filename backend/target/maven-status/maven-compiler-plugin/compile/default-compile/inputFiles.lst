@@ -1,3 +1,4 @@
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\ChatResponse.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\RegisterRequest.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\repository\UserRepository.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\security\JwtUtils.java
@@ -12,6 +13,8 @@ C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\jav
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\LoginResponse.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\service\EmailService.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\repository\MealPlanRepository.java
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\controller\ChatbotController.java
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\ChatRequest.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\service\OllamaService.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\repository\AppointmentRepository.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\service\RegisterService.java
@@ -36,7 +39,10 @@ C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\jav
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\model\MealPlan.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\service\AuthService.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\controller\AppointmentController.java
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\service\ChatbotService.java
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\ChatMessageResponse.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\UpdateUserRequest.java
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\model\ChatMessage.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\controller\TrainerController.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\exception\DuplicateResourceException.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\AdminUserResponse.java
@@ -47,6 +53,7 @@ C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\jav
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\controller\ProfileController.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\controller\AdminController.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\RugbyPlannerApplication.java
+C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\repository\ChatMessageRepository.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\repository\TrainerRepository.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\exception\GlobalExceptionHandler.java
 C:\Users\Danial\Documents\FYP\rugby-planner-full\rugby-full\backend\src\main\java\com\utm\rugbyplanner\dto\WorkoutPlanRequest.java
