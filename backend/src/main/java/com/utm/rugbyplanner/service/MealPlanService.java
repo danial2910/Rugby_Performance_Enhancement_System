@@ -259,7 +259,17 @@ INSTRUCTIONS:
 10. On training-heavy days increase carbohydrate loading by 15–20%% for energy.
 11. On recovery days emphasise anti-inflammatory foods and higher protein.
 12. End with a "Weekly Nutrition Summary" table: Day | Calories | Protein | Carbs | Fat.
-13. Format output using markdown: ## for day headings, ### for meal names, bullet points for food items.
+13. STRICT FORMATTING RULES — follow exactly:
+    - Day headings: ## Day 1 (Monday)  (always use "Day N (DayName)" format)
+    - Meal headings: ### Meal 1: Breakfast  (always use "Meal N: Name" format)
+    - Food items: bullet points under each meal
+    - DO NOT use any other heading format for days or meals.
+    Example structure:
+    ## Day 1 (Monday)
+    ### Meal 1: Breakfast
+    - Food item with portion
+    ### Meal 2: Lunch
+    - Food item with portion
 
 Begin the 7-day meal plan now:
 """,

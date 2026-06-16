@@ -636,10 +636,12 @@ async function handleActivate() {
 
 /**
  * Extract individual meal keys from the plan markdown.
- * Meal plan headings pattern:
- *   ## Day 1 (Monday)
- *   ### Breakfast
- * → key: "Day 1 – Breakfast"
+ * Handles multiple Llama output patterns:
+ *   "## Day 1 (Monday)"        → classic format
+ *   "## Monday (Pre-Season…)"  → day-name format Llama often produces
+ *   "### Meal 1: Breakfast"    → meal heading
+ *   "**Meal 1: Breakfast**"    → bold meal heading (fallback)
+ * → key: "Monday (Pre-Season…) – Meal 1: Breakfast"
  */
 function extractMealKeys(text) {
   if (!text) return []
@@ -647,15 +649,26 @@ function extractMealKeys(text) {
   const keys  = []
   let currentDay = ''
 
+  const DAYS = 'Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday'
+
   for (const line of lines) {
-    const dayMatch  = line.match(/^##\s+(Day\s+\d+[^\n]*)/i)
-    const mealMatch = line.match(/^###\s+(.+)/)
+    // Match any ## heading that is a day marker:
+    //   "## Day 1 (Monday)"  OR  "## Monday (Pre-Season Training)"
+    const dayMatch = line.match(
+      new RegExp(`^##\\s+\\**\\s*((?:Day\\s+\\d+|${DAYS})\\b[^\n]*)\\**\\s*$`, 'i')
+    )
+    // Match ### meal heading OR a bold "**Meal N: ...**" line
+    const mealMatch = line.match(/^###\s+(.+)/) ||
+                      line.match(/^\*\*(Meal\s+\d+[^*]+)\*\*\s*$/)
+
     if (dayMatch) {
       currentDay = dayMatch[1].replace(/\*\*/g, '').trim()
     } else if (mealMatch && currentDay) {
-      const mealName = mealMatch[1].replace(/\*\*/g, '').trim()
+      const mealName = (mealMatch[1]).replace(/\*\*/g, '').trim()
       // Skip summary/table sections
-      if (!mealName.toLowerCase().includes('summary') && !mealName.toLowerCase().includes('table')) {
+      if (!mealName.toLowerCase().includes('summary') &&
+          !mealName.toLowerCase().includes('table') &&
+          !mealName.toLowerCase().includes('nutrition overview')) {
         const key = `${currentDay} – ${mealName}`
         if (!keys.includes(key)) keys.push(key)
       }

@@ -441,43 +441,60 @@
         <p>No {{ statusFilter !== 'ALL' ? statusFilter.toLowerCase() : '' }} appointments.</p>
       </div>
 
-      <div v-else class="trainer-grid-appt">
+      <div v-else class="trainer-appt-list">
         <div
           v-for="appt in filteredAppointments"
           :key="appt.id"
-          class="t-card"
-          :class="`tc-${appt.status.toLowerCase()}`"
+          class="tl-item"
+          :class="`tl-${appt.status.toLowerCase()}`"
         >
-          <div class="t-card-head">
-            <span class="appt-badge" :class="`badge-${appt.status.toLowerCase()}`">{{ appt.status }}</span>
-            <span class="t-card-date">{{ formatDate(appt.date) }} · {{ appt.time }}</span>
-          </div>
+          <!-- ── Main row ────────────────────────────────────────── -->
+          <div class="tl-main">
+            <!-- Athlete -->
+            <div class="tl-athlete">
+              <div class="t-avatar">{{ initials(appt.athleteName) }}</div>
+              <div class="tl-athlete-info">
+                <div class="tl-name">{{ appt.athleteName }}</div>
+                <div class="tl-service">{{ serviceLabel(appt.serviceType) }}</div>
+              </div>
+            </div>
 
-          <div class="t-card-athlete">
-            <div class="t-avatar">{{ initials(appt.athleteName) }}</div>
-            <div>
-              <div class="t-name">{{ appt.athleteName }}</div>
-              <div class="t-service">{{ serviceLabel(appt.serviceType) }}</div>
+            <!-- Date / Time -->
+            <div class="tl-col tl-datetime">
+              <div class="tl-col-main">{{ formatDate(appt.date) }}</div>
+              <div class="tl-col-sub">🕐 {{ appt.time }}</div>
+            </div>
+
+            <!-- Duration / Location -->
+            <div class="tl-col tl-dur">
+              <div class="tl-col-main">⏱ {{ appt.duration }} min</div>
+              <div class="tl-col-sub">{{ locationLabel(appt.location) }}</div>
+            </div>
+
+            <!-- Purpose -->
+            <div class="tl-col tl-purpose">
+              <div class="tl-purpose-text">{{ appt.purpose }}</div>
+              <div v-if="appt.specialRequirements" class="tl-special">⚠️ {{ appt.specialRequirements }}</div>
+            </div>
+
+            <!-- Status + delete -->
+            <div class="tl-right">
+              <span class="appt-badge" :class="`badge-${appt.status.toLowerCase()}`">{{ appt.status }}</span>
+              <button class="btn-delete-sm" @click="confirmDeleteTrainer(appt)" title="Remove from history">
+                🗑️ Delete
+              </button>
             </div>
           </div>
 
-          <div class="t-details">
-            <div class="t-row"><span>⏱</span> {{ appt.duration }} min · {{ locationLabel(appt.location) }}</div>
-            <div class="t-row"><span>📝</span> {{ appt.purpose }}</div>
-            <div v-if="appt.specialRequirements" class="t-row t-special">
-              <span>⚠️</span> {{ appt.specialRequirements }}
-            </div>
-          </div>
-
-          <!-- Action area — only for PENDING -->
-          <div v-if="appt.status === 'PENDING'" class="t-actions">
+          <!-- ── Pending: remarks + approve/reject ──────────────── -->
+          <div v-if="appt.status === 'PENDING'" class="tl-expand tl-pending-actions">
             <textarea
               v-model="remarksMap[appt.id]"
-              class="form-textarea"
+              class="form-textarea tl-remarks-input"
               rows="2"
               placeholder="Optional remarks (e.g. 'See you at Field 2' or reason for rejection)"
             ></textarea>
-            <div class="t-btns">
+            <div class="tl-action-btns">
               <button class="btn btn-approve" :disabled="apptStore.saving" @click="handleApprove(appt.id)">
                 ✅ Approve
               </button>
@@ -487,21 +504,13 @@
             </div>
           </div>
 
-          <!-- Remarks display for non-pending -->
-          <div v-else-if="appt.status !== 'PENDING' && appt.trainerRemarks" class="t-remarks">
+          <!-- ── Non-pending: existing remarks ─────────────────── -->
+          <div v-else-if="appt.trainerRemarks" class="tl-expand tl-remarks-display">
             <strong>Your remarks:</strong> {{ appt.trainerRemarks }}
           </div>
 
-          <!-- Delete button — always visible for trainer -->
-          <div class="t-delete-row">
-            <button class="btn btn-delete-sm" @click="confirmDeleteTrainer(appt)" title="Remove from history">
-              🗑️ Delete Record
-            </button>
-          </div>
-
-          <!-- Feedback section — APPROVED appointments -->
-          <div v-if="appt.status === 'APPROVED'" class="t-feedback-section">
-            <!-- Existing feedback display -->
+          <!-- ── Approved: feedback section ─────────────────────── -->
+          <div v-if="appt.status === 'APPROVED'" class="tl-expand tl-feedback-section">
             <div v-if="appt.trainerFeedback && feedbackEditId !== appt.id" class="t-feedback-display">
               <div class="t-feedback-header">
                 <span>📋 Session Feedback</span>
@@ -509,7 +518,6 @@
               </div>
               <p class="t-feedback-text">{{ appt.trainerFeedback }}</p>
             </div>
-            <!-- Feedback input form -->
             <div v-else class="t-feedback-form">
               <label class="t-feedback-label">
                 {{ appt.trainerFeedback ? '✏️ Edit Feedback' : '📋 Add Session Feedback' }}
@@ -1055,25 +1063,81 @@ function locationLabel(l) {
 .tab-cnt   { font-size: 10px; background: var(--color-bg-3); padding: 1px 5px; border-radius: 8px; }
 .pending-badge { background: #f59e0b; color: #000; font-size: 12px; font-weight: 700; padding: 5px 14px; border-radius: 20px; }
 
-/* ── Trainer appointment cards ─────────────────────────────────────────────── */
-.trainer-grid-appt { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.t-card      { background: var(--color-bg-2); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
-.tc-pending   { border-left: 4px solid #f59e0b; }
-.tc-approved  { border-left: 4px solid var(--color-green-light); }
-.tc-rejected  { border-left: 4px solid #ef4444; }
-.tc-cancelled { border-left: 4px solid var(--color-muted); opacity: 0.7; }
-.t-card-head  { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; }
-.t-card-date  { font-size: 12px; color: var(--color-muted); }
-.t-card-athlete { display: flex; align-items: center; gap: 12px; }
-.t-avatar    { width: 40px; height: 40px; border-radius: 50%; background: var(--color-bg-3); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--color-green-light); flex-shrink: 0; }
-.t-name      { font-size: 14px; font-weight: 700; color: var(--color-text); }
-.t-service   { font-size: 12px; color: var(--color-muted); }
-.t-details   { display: flex; flex-direction: column; gap: 5px; }
-.t-row       { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--color-text); }
-.t-special   { color: #f59e0b; font-size: 12px; }
-.t-actions   { display: flex; flex-direction: column; gap: 8px; }
-.t-btns      { display: flex; gap: 10px; }
-.t-remarks   { font-size: 12px; color: var(--color-muted); background: var(--color-bg-3); padding: 8px 10px; border-radius: var(--radius-md); }
+/* ── Trainer appointment list ──────────────────────────────────────────────── */
+.trainer-appt-list { display: flex; flex-direction: column; gap: 0; }
+
+.tl-item {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.tl-pending   { border-left-color: #f59e0b; }
+.tl-approved  { border-left-color: var(--color-green-light); }
+.tl-rejected  { border-left-color: #ef4444; opacity: 0.85; }
+.tl-cancelled { border-left-color: var(--color-muted); opacity: 0.7; }
+
+/* Main row — horizontal columns */
+.tl-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  flex-wrap: wrap;
+}
+
+/* Athlete column */
+.tl-athlete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+  flex: 0 0 auto;
+}
+.tl-athlete-info { min-width: 0; }
+.tl-name    { font-size: 14px; font-weight: 700; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-service { font-size: 11px; color: var(--color-muted); white-space: nowrap; }
+
+/* Generic data columns */
+.tl-col     { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tl-col-main { font-size: 13px; font-weight: 600; color: var(--color-text); white-space: nowrap; }
+.tl-col-sub  { font-size: 11px; color: var(--color-muted); white-space: nowrap; }
+
+.tl-datetime { flex: 0 0 160px; }
+.tl-dur      { flex: 0 0 110px; }
+.tl-purpose  { flex: 1; min-width: 120px; }
+.tl-purpose-text { font-size: 13px; color: var(--color-text); }
+.tl-special  { font-size: 11px; color: #f59e0b; margin-top: 2px; }
+
+/* Right-side: status + delete */
+.tl-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Expanded rows below main */
+.tl-expand {
+  border-top: 1px solid var(--color-border);
+  padding: 12px 16px;
+}
+.tl-pending-actions { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.tl-remarks-input   { flex: 1; min-width: 200px; resize: none; }
+.tl-action-btns     { display: flex; gap: 8px; flex-shrink: 0; }
+.tl-remarks-display { font-size: 12px; color: var(--color-muted); }
+
+/* Avatar (shared) */
+.t-avatar    { width: 38px; height: 38px; border-radius: 50%; background: var(--color-bg-3); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: var(--color-green-light); flex-shrink: 0; }
+
+/* Feedback within list item */
+.tl-feedback-section { border-top: 1px solid var(--color-border); padding: 12px 16px; }
 
 /* ── Appointment action buttons ────────────────────────────────────────────── */
 .appt-actions { display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0; align-items: center; margin-top: 4px; }
