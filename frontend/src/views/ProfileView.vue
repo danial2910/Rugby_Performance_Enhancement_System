@@ -121,7 +121,7 @@
               class="form-input readonly-field" readonly />
           </div>
 
-          <div class="form-group">
+          <div class="form-group" v-if="isAthlete">
             <label class="form-label">Matrix Number <span class="optional">optional</span></label>
             <input v-model="userForm.matrixNumber" type="text" class="form-input"
               placeholder="e.g. A22EC0001" @input="clearUserError('matrixNumber')" />

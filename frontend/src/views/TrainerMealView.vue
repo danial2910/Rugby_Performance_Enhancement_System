@@ -386,11 +386,11 @@ function renderMarkdown(text) {
 }
 
 // ── Progress Chart ────────────────────────────────────────────────────────────
-const chartType = ref('bar')
+const chartType = ref('pie')
 const chartTypes = [
+  { value: 'pie',  label: '🥧 Pie'  },
   { value: 'bar',  label: '📊 Bar'  },
-  { value: 'line', label: '📈 Line' },
-  { value: 'pie',  label: '🥧 Pie'  }
+  { value: 'line', label: '📈 Line' }
 ]
 
 const athletesWithMealData = computed(() => {

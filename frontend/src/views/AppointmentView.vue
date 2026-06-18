@@ -705,11 +705,22 @@ onMounted(async () => {
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 
-const filteredAppointments = computed(() =>
-  statusFilter.value === 'ALL'
+const filteredAppointments = computed(() => {
+  const list = statusFilter.value === 'ALL'
     ? apptStore.appointments
     : apptStore.appointments.filter(a => a.status === statusFilter.value)
-)
+
+  return [...list].sort((a, b) => {
+    const now = new Date()
+    const dateA = new Date(a.date + 'T' + (a.time || '00:00'))
+    const dateB = new Date(b.date + 'T' + (b.time || '00:00'))
+    const aUpcoming = dateA >= now
+    const bUpcoming = dateB >= now
+
+    if (aUpcoming !== bUpcoming) return aUpcoming ? -1 : 1
+    return aUpcoming ? dateA - dateB : dateB - dateA
+  })
+})
 
 const pendingCount = computed(() =>
   apptStore.appointments.filter(a => a.status === 'PENDING').length
