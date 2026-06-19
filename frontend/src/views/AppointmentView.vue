@@ -260,7 +260,7 @@
             <div class="appt-actions">
               <template v-if="appt.status === 'PENDING'">
                 <button class="btn btn-sm btn-edit" @click="openEdit(appt)">✏️ Edit</button>
-                <button class="btn btn-sm btn-ghost" @click="handleCancel(appt.id)">Cancel</button>
+                <button class="btn btn-sm btn-ghost" @click="cancelTarget = appt">Cancel</button>
               </template>
               <button class="btn btn-sm btn-delete" @click="confirmDeleteAthlete(appt)" title="Remove from history">🗑️ Delete</button>
             </div>
@@ -498,7 +498,7 @@
               <button class="btn btn-approve" :disabled="apptStore.saving" @click="handleApprove(appt.id)">
                 ✅ Approve
               </button>
-              <button class="btn btn-reject" :disabled="apptStore.saving" @click="handleReject(appt.id)">
+              <button class="btn btn-reject" :disabled="apptStore.saving" @click="handleReject(appt)">
                 ✕ Reject
               </button>
             </div>
@@ -552,6 +552,60 @@
 
     </template>
 
+    <!-- ── Reject confirmation modal (trainer, no remarks) ──────────────── -->
+    <transition name="fade">
+      <div v-if="rejectTarget" class="modal-overlay" @click.self="rejectTarget = null">
+        <div class="modal-card modal-small">
+          <div class="modal-header">
+            <h2 class="modal-title">Reject Appointment</h2>
+            <button class="modal-close" @click="rejectTarget = null">×</button>
+          </div>
+          <div class="modal-body">
+            <p>Reject this appointment without providing a reason?</p>
+            <div class="delete-preview">
+              <span class="appt-badge badge-pending">PENDING</span>
+              <span>{{ formatDate(rejectTarget.date) }} · {{ rejectTarget.time }}</span>
+              <span>{{ rejectTarget.athleteName }}</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="rejectTarget = null">Back</button>
+            <button class="btn btn-danger" :disabled="apptStore.saving" @click="doReject(rejectTarget.id)">
+              <span v-if="apptStore.saving" class="btn-spinner"></span>
+              Reject
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- ── Cancel confirmation modal (athlete) ──────────────────────────── -->
+    <transition name="fade">
+      <div v-if="cancelTarget" class="modal-overlay" @click.self="cancelTarget = null">
+        <div class="modal-card modal-small">
+          <div class="modal-header">
+            <h2 class="modal-title">Cancel Appointment</h2>
+            <button class="modal-close" @click="cancelTarget = null">×</button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to cancel this appointment?</p>
+            <div class="delete-preview">
+              <span class="appt-badge badge-pending">PENDING</span>
+              <span>{{ formatDate(cancelTarget.date) }} · {{ cancelTarget.time }}</span>
+              <span>{{ cancelTarget.trainerName }}</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="cancelTarget = null">Back</button>
+            <button class="btn btn-danger" :disabled="apptStore.saving" @click="confirmCancel">
+              <span v-if="apptStore.saving" class="btn-spinner"></span>
+              Cancel Appointment
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
+
     <!-- ── Delete confirmation modal (shared) ───────────────────────────── -->
     <transition name="fade">
       <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
@@ -595,6 +649,8 @@ const apptStore = useAppointmentStore()
 
 const showBookingForm = ref(false)
 const statusFilter    = ref('ALL')
+const cancelTarget    = ref(null)   // appointment pending cancel confirmation
+const rejectTarget    = ref(null)   // appointment pending reject confirmation (no remarks)
 const deleteTarget    = ref(null)   // appointment pending delete confirmation
 const deleteRole      = ref('')     // 'athlete' | 'trainer'
 const remarksMap      = reactive({})
@@ -756,9 +812,10 @@ async function handleBook() {
   }
 }
 
-async function handleCancel(id) {
-  if (!confirm('Cancel this appointment?')) return
-  await apptStore.cancelAppointment(id)
+async function confirmCancel() {
+  if (!cancelTarget.value) return
+  const result = await apptStore.cancelAppointment(cancelTarget.value.id)
+  if (result) cancelTarget.value = null
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────
@@ -835,10 +892,18 @@ async function handleApprove(id) {
   delete remarksMap[id]
 }
 
-async function handleReject(id) {
-  if (!remarksMap[id]?.trim() && !confirm('Reject without providing a reason?')) return
+function handleReject(appt) {
+  if (!remarksMap[appt.id]?.trim()) {
+    rejectTarget.value = appt
+    return
+  }
+  doReject(appt.id)
+}
+
+async function doReject(id) {
   await apptStore.rejectAppointment(id, remarksMap[id] || '')
   delete remarksMap[id]
+  rejectTarget.value = null
 }
 
 function openFeedbackEdit(appt) {
