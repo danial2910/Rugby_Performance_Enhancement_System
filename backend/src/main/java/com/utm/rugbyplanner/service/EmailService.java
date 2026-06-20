@@ -1,38 +1,58 @@
 package com.utm.rugbyplanner.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.utm.rugbyplanner.model.Appointment;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * EmailService — UC010: Send email notification to athlete
  *
- * Sends an HTML email from adminpirates@gmail.com to the athlete's email
- * whenever a trainer approves or rejects their appointment.
+ * Sends an HTML email via Resend's HTTPS API to the athlete's email whenever
+ * a trainer approves or rejects their appointment.
+ *
+ * NOTE: this used to go through Gmail SMTP via JavaMailSender, but Render's
+ * free tier blocks outbound traffic on SMTP ports (25/465/587) to fight spam,
+ * which caused every send to time out in production. Resend uses a plain
+ * HTTPS API call instead, so it isn't affected by that block.
  *
  * Emails are sent asynchronously so they never block the HTTP response.
  * If sending fails, the error is logged but the appointment action still succeeds.
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
-    private final JavaMailSender mailSender;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${spring.mail.username}")
+    @Value("${resend.api.key}")
+    private String resendApiKey;
+
+    @Value("${resend.api.url}")
+    private String resendApiUrl;
+
+    @Value("${resend.from-email}")
     private String fromEmail;
+
+    @Value("${resend.reply-to}")
+    private String replyToEmail;
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -55,16 +75,39 @@ public class EmailService {
     // ── Internal send ─────────────────────────────────────────────────────────
 
     private void send(String to, String subject, String htmlBody) {
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            log.error("UC010 Skipped sending email to {} — RESEND_API_KEY is not set", to);
+            return;
+        }
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromEmail, "Rugby Performance Enhancement System");
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(htmlBody, true);
-            mailSender.send(message);
-            log.info("UC010 Email sent to {} — subject: {}", to, subject);
-        } catch (MessagingException | java.io.UnsupportedEncodingException e) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("from", fromEmail);
+            payload.put("to", List.of(to));
+            payload.put("subject", subject);
+            payload.put("html", htmlBody);
+            if (replyToEmail != null && !replyToEmail.isBlank()) {
+                payload.put("reply_to", List.of(replyToEmail));
+            }
+
+            String jsonBody = objectMapper.writeValueAsString(payload);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(resendApiUrl))
+                    .timeout(Duration.ofSeconds(10))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("UC010 Email sent to {} — subject: {}", to, subject);
+            } else {
+                log.error("UC010 Failed to send email to {} — Resend returned {}: {}",
+                        to, response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
             log.error("UC010 Failed to send email to {}: {}", to, e.getMessage());
         }
     }

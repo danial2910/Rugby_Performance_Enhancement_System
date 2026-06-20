@@ -76,12 +76,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Boot Mail (UC010 — email notifications) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
-
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
