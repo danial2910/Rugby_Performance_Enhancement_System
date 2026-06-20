@@ -697,7 +697,9 @@ function extractExerciseKeys(text) {
     if (dayCol < 0 || exCol < 0) continue
     if (!cells[dayCol] || !cells[exCol]) continue
 
-    const dayNum      = cells[dayCol].trim()
+    // The AI sometimes writes the Day column as just "1" and sometimes as
+    // "Day 1" — strip any leading "Day" word so we don't double it up below.
+    const dayNum      = cells[dayCol].trim().replace(/^day\s*/i, '')
     const exerciseStr = cells[exCol].trim()
     if (!dayNum || !exerciseStr) continue
 

@@ -458,31 +458,51 @@ function phaseLabel(phase) {
   return map[phase] || phase || ''
 }
 
+function mdInlineFormat(s) {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+}
+
 function renderMarkdown(text) {
   if (!text) return ''
-  let html = text
+  let escaped = text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  // tables — extract into placeholder tokens first so the later
+  // newline-sensitive paragraph pass below can't inject stray <br/>
+  // tags inside the <table>, which breaks rendering into fragmented blocks.
+  const tables = []
+  escaped = escaped.replace(/(^\|.+\|[ \t]*$\n?)+/gm, (block) => {
+    const lines = block.trim().split('\n')
+    const rows = lines
+      .map(line => line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim()))
+      .filter(cells => !cells.every(c => /^[-:\s]+$/.test(c)))
+    if (rows.length === 0) return block
+    const [headerRow, ...bodyRows] = rows
+    const thead = '<thead><tr>' + headerRow.map(c => `<th>${mdInlineFormat(c)}</th>`).join('') + '</tr></thead>'
+    const tbody = '<tbody>' + bodyRows.map(r => '<tr>' + r.map(c => `<td>${mdInlineFormat(c)}</td>`).join('') + '</tr>').join('') + '</tbody>'
+    const token = `@@TABLE_${tables.length}@@`
+    tables.push(`<table class="md-table">${thead}${tbody}</table>`)
+    return token + '\n'
+  })
+
+  let html = escaped
     .replace(/^#{3}\s+(.+)$/gm, '<h3>$1</h3>')
     .replace(/^#{2}\s+(.+)$/gm, '<h2>$1</h2>')
     .replace(/^#{1}\s+(.+)$/gm, '<h1>$1</h1>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code>$1</code>')
-    // tables
-    .replace(/\|(.+)\|/g, (match) => {
-      const cells = match.split('|').filter((_, i, a) => i > 0 && i < a.length - 1)
-      const isSep = cells.every(c => /^[-:\s]+$/.test(c))
-      if (isSep) return ''
-      const tag = 'td'
-      return '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>'
-    })
-    .replace(/(<tr>.*<\/tr>)/gs, '<table class="md-table">$1</table>')
     // lists
     .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
     .replace(/(<li>[\s\S]+?<\/li>)(?=\n(?!<li>)|\n*$)/g, '<ul>$1</ul>')
     // paragraphs
     .replace(/\n{2,}/g, '</p><p>')
     .replace(/\n/g, '<br/>')
+
+  html = html.replace(/@@TABLE_(\d+)@@/g, (_, i) => tables[Number(i)])
   return `<p>${html}</p>`
 }
 </script>
@@ -851,9 +871,20 @@ function renderMarkdown(text) {
 .markdown-body :deep(li) { margin-bottom: 3px; }
 .markdown-body :deep(strong) { color: var(--color-text); }
 .markdown-body :deep(code) { background: var(--color-bg-3); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
-.markdown-body :deep(.md-table) { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-.markdown-body :deep(.md-table td) { border: 1px solid var(--color-border); padding: 7px 10px; }
-.markdown-body :deep(.md-table tr:first-child td) { background: var(--color-bg-3); font-weight: 600; }
+.markdown-body :deep(.md-table) {
+  width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden;
+}
+.markdown-body :deep(.md-table th) {
+  padding: 8px 10px; text-align: left; font-weight: 600; color: var(--color-text);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.markdown-body :deep(.md-table td) {
+  padding: 7px 10px; border-top: 1px solid var(--color-border); color: var(--color-text-dim);
+}
+.markdown-body :deep(.md-table tbody tr:nth-child(even)) { background: var(--color-bg-2); }
+.markdown-body :deep(.md-table tbody tr:hover td) { background: var(--color-bg-3); }
 
 /* ── Edit form ─────────────────────────────────────────────────────────────── */
 .edit-form {

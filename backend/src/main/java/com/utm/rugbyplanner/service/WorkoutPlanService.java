@@ -243,7 +243,10 @@ INSTRUCTIONS:
 5. Each training day must include:
    a) Session Focus (e.g. "Lower Body Strength & Power")
    b) Warm-Up (5–10 minutes, specific movements)
-   c) Main Workout (exercises with sets × reps, load guidance as %% of bodyweight or RPE, rest periods)
+   c) Main Workout (exercises with sets × reps, load guidance as %% of bodyweight or RPE, rest periods).
+      The number of exercises in the Main Workout section can vary day to day based on
+      what makes sense for that session (e.g. 3 on a lighter day, 5 on a heavier day) —
+      there is no fixed count to hit.
    d) Finisher / Conditioning (optional, position-appropriate)
    e) Cool-Down (5 minutes)
    f) Coaching Notes (position-specific tips for %s)
@@ -251,6 +254,16 @@ INSTRUCTIONS:
 7. IMPORTANT — Injury notes: %s. Avoid aggravating exercises and suggest safe alternatives.
 8. Format output using markdown: ## for day headings, ### for sub-sections, bullet points for exercises.
 9. End with a "Weekly Structure Summary" table: Day | Focus | Volume | Key Exercises.
+   CRITICAL — The "Key Exercises" column for each training day MUST exactly match that
+   day's Main Workout section: list every single exercise name from that day's Main
+   Workout, comma-separated, in the same order and using the exact same wording as in
+   the Main Workout section. The count in this column MUST equal the count of exercises
+   in that day's Main Workout — if Monday's Main Workout has 4 exercises, list 4; if
+   Tuesday's Main Workout has 5, list 5. Never omit, abbreviate, or summarise this list,
+   and never list more or fewer items than actually appear in that day's Main Workout —
+   this exact list is used to build the athlete's progress-tracking checklist, so any
+   mismatch breaks it. Do not include Finisher/Conditioning exercises in this column,
+   only Main Workout ones.
 
 Begin the plan now:
 """,

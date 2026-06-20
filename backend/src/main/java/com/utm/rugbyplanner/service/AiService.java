@@ -71,7 +71,14 @@ public class AiService {
         String url = groqApiUrl + "/chat/completions";
 
         GroqMessage message = new GroqMessage("user", prompt);
-        GroqRequest request = new GroqRequest(groqModel, List.of(message));
+        // IMPORTANT — Groq's default max_completion_tokens (when omitted) is far
+        // too small for a full 7-day meal/workout plan that also has to show its
+        // per-day addition work before the closing summary table. Without an
+        // explicit, generous cap, the API silently truncates the response mid-plan
+        // (e.g. cutting off partway through Day 6, before the Weekly Nutrition
+        // Summary table is ever written). 8000 tokens comfortably covers the
+        // largest plans this app generates while staying within the model's limits.
+        GroqRequest request = new GroqRequest(groqModel, List.of(message), 8000, 0.4);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -124,6 +131,13 @@ public class AiService {
     private static class GroqRequest {
         private String model;
         private List<GroqMessage> messages;
+        // Explicit completion length cap — see comment at the call site in
+        // generate() for why this must not be left to Groq's default.
+        @com.fasterxml.jackson.annotation.JsonProperty("max_completion_tokens")
+        private Integer maxCompletionTokens;
+        // Lower temperature → more deterministic, more reliable arithmetic when
+        // the model is asked to show its addition work for daily macro totals.
+        private Double temperature;
     }
 
     @Data

@@ -637,7 +637,9 @@ function extractExerciseKeys(text) {
     if (dayCol < 0 || exCol < 0) continue
     if (!cells[dayCol] || !cells[exCol]) continue
 
-    const dayNum      = cells[dayCol].trim()
+    // The AI sometimes writes the Day column as just "1" and sometimes as
+    // "Day 1" — strip any leading "Day" word so we don't double it up below.
+    const dayNum      = cells[dayCol].trim().replace(/^day\s*/i, '')
     const exerciseStr = cells[exCol].trim()
 
     if (!dayNum || !exerciseStr) continue
@@ -689,7 +691,9 @@ function groupedExerciseKeys(text) {
       continue
     }
     if (dayCol < 0) continue
-    const dayNum = cells[dayCol]?.trim()
+    // Strip any leading "Day" word so this matches the keys built by
+    // extractExerciseKeys() above (which normalizes the same way).
+    const dayNum = cells[dayCol]?.trim().replace(/^day\s*/i, '')
     const focus  = focusCol >= 0 ? cells[focusCol]?.trim() : ''
     if (dayNum) focusMap[`Day ${dayNum}`] = focus || ''
   }
@@ -884,10 +888,55 @@ function formatDate(dateStr) {
   })
 }
 
+/** Apply inline bold/italic markdown formatting to a fragment of text. */
+function mdInlineFormat(s) {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,    '<em>$1</em>')
+}
+
 function renderMarkdown(text) {
   if (!text) return ''
-  return text
+
+  let escaped = text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  // ── Extract markdown tables as standalone blocks first.
+  // Doing this before the generic line-based replacements below avoids two
+  // rendering bugs: (1) the header-separator row ("|---|---|...|") being
+  // rendered as a literal visible data row, and (2) the later \n → <br>
+  // conversion injecting stray <br> tags between <tr> rows inside <table>,
+  // which is invalid HTML and was causing each row to visually render as
+  // its own disconnected block with large gaps between them.
+  const tables = []
+  escaped = escaped.replace(/(^\|.+\|[ \t]*$\n?)+/gm, (block) => {
+    const rows = block.trim().split('\n').map(line =>
+      line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim())
+    )
+    const isSeparatorRow = (cells) => cells.length > 0 && cells.every(c => /^:?-+:?$/.test(c))
+
+    let headerRow = null
+    let bodyRows = rows
+    if (rows.length > 1 && isSeparatorRow(rows[1])) {
+      headerRow = rows[0]
+      bodyRows = rows.slice(2)
+    }
+    bodyRows = bodyRows.filter(r => !isSeparatorRow(r))
+
+    let html = '<table class="md-table">'
+    if (headerRow) {
+      html += '<thead><tr>' + headerRow.map(c => `<th>${mdInlineFormat(c)}</th>`).join('') + '</tr></thead>'
+    }
+    html += '<tbody>' + bodyRows.map(r =>
+      '<tr>' + r.map(c => `<td>${mdInlineFormat(c)}</td>`).join('') + '</tr>'
+    ).join('') + '</tbody></table>'
+
+    const token = `@@TABLE_${tables.length}@@`
+    tables.push(html)
+    return token
+  })
+
+  let result = escaped
     .replace(/^## (.+)$/gm,   '<h2 class="md-h2">$1</h2>')
     .replace(/^### (.+)$/gm,  '<h3 class="md-h3">$1</h3>')
     .replace(/^#### (.+)$/gm, '<h4 class="md-h4">$1</h4>')
@@ -895,14 +944,19 @@ function renderMarkdown(text) {
     .replace(/\*(.+?)\*/g,    '<em>$1</em>')
     .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => `<ul class="md-ul">${m}</ul>`)
-    .replace(/^\|(.+)\|$/gm, (_, cells) =>
-      `<tr>${cells.split('|').map(c => `<td>${c.trim()}</td>`).join('')}</tr>`)
-    .replace(/(<tr>[\s\S]*?<\/tr>\n?)+/g, m => `<table class="md-table">${m}</table>`)
     .replace(/^---+$/gm, '<hr class="md-hr">')
     .replace(/\n\n/g, '</p><p class="md-p">')
     .replace(/\n/g,   '<br>')
     .replace(/^/, '<p class="md-p">')
     .replace(/$/, '</p>')
+
+  // Re-insert the table HTML built above (placeholder tokens contain no
+  // newlines, so they're untouched by the <br>/<p> conversion above).
+  tables.forEach((html, i) => {
+    result = result.replace(`@@TABLE_${i}@@`, html)
+  })
+
+  return result
 }
 </script>
 
@@ -1296,9 +1350,20 @@ function renderMarkdown(text) {
 .plan-markdown :deep(.md-p)  { font-size: 14px; line-height: 1.7; color: var(--color-text-dim); margin: 8px 0; }
 .plan-markdown :deep(.md-ul) { padding-left: 18px; margin: 8px 0; display: flex; flex-direction: column; gap: 5px; }
 .plan-markdown :deep(li)     { font-size: 14px; line-height: 1.6; color: var(--color-text-dim); }
-.plan-markdown :deep(.md-table) { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
-.plan-markdown :deep(td)        { padding: 8px 12px; border: 1px solid var(--color-border); color: var(--color-text-dim); }
-.plan-markdown :deep(tr:first-child td) { background: var(--color-surface); font-weight: 600; color: var(--color-text); }
+.plan-markdown :deep(.md-table) {
+  width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden;
+}
+.plan-markdown :deep(.md-table th) {
+  padding: 9px 12px; text-align: left; font-weight: 600; color: var(--color-text);
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+.plan-markdown :deep(.md-table td) {
+  padding: 8px 12px; border-top: 1px solid var(--color-border); color: var(--color-text-dim);
+}
+.plan-markdown :deep(.md-table tbody tr:nth-child(even)) { background: var(--color-bg-2); }
+.plan-markdown :deep(.md-table tbody tr:hover td) { background: var(--color-bg-3); }
 .plan-markdown :deep(.md-hr)    { border: none; border-top: 1px solid var(--color-border); margin: 20px 0; }
 .plan-markdown :deep(strong)    { color: var(--color-text); }
 

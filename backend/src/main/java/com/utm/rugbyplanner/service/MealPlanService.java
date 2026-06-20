@@ -45,6 +45,11 @@ public class MealPlanService {
                 username, req.getRugbyPosition(), req.getGoals(), req.getDietaryPreference());
 
         String prompt = buildPrompt(req);
+        // The prompt now requires the AI to show its addition work for each
+        // day's totals (e.g. "350+275+450 = 1075 kcal") before writing the
+        // Weekly Nutrition Summary table, and to copy those same numbers into
+        // the table rather than recomputing them. There is no backend
+        // recalculation of these totals — we rely on the AI's shown work.
         String generatedPlan = aiService.generate(prompt);
 
         String goalsLabel = req.getGoals().stream()
@@ -218,6 +223,14 @@ public class MealPlanService {
         String goalsText   = req.getGoals().stream()
                 .map(this::goalLabel)
                 .collect(Collectors.joining(", "));
+        // The AI was reliably landing at roughly 40% of the daily calorie target
+        // (e.g. ~1635 kcal vs a ~4035 kcal target) even with an explicit ±10%
+        // instruction, because an abstract day-level percentage gives it nothing
+        // concrete to size individual meals against. Giving it a per-meal kcal
+        // figure (daily target / meals per day) gives it a portion-sizing anchor
+        // for every single meal, which is much more effective at steering output.
+        int mealsPerDayForCalc = req.getMealsPerDay() > 0 ? req.getMealsPerDay() : 3;
+        int mealCalorieTarget  = Math.round((float) targetCalories / mealsPerDayForCalc);
 
         return String.format("""
 You are an expert sports nutritionist specialising in rugby performance nutrition for university athletes (UTM Pirates, Malaysia).
@@ -248,18 +261,47 @@ INSTRUCTIONS:
    - MEDIUM (15–30 min): standard cooking, batch-prep friendly
    - HIGH (30+ min): full recipes, complex preparations are acceptable
 4. Each day must include exactly %d meals clearly labelled.
-5. For each meal provide:
+5. IMPORTANT — Each day's total calories (the sum of that day's meals' Estimated macros)
+   MUST land within ±10%% of the Estimated Daily Calorie Target (~%d kcal/day) given
+   above. Concretely: that target divided across %d meals/day means each individual
+   meal should average around ~%d kcal — adjust individual meals up or down (a bigger
+   lunch/dinner, a smaller snack) but keep the day's total close to the target. Use
+   generous, calorie-dense portions (rice, oils, nuts, dairy, more protein and carb
+   sources) rather than small, low-calorie servings — small portions are the single
+   most common reason a plan falls far short of the target (e.g. landing at ~1600 kcal
+   when the target is ~4000 kcal is NOT acceptable). Size the actual food portions so
+   the real numbers add up to this target — do not just display the target without
+   choosing foods/portions that reach it. This applies to every individual day, not
+   just the weekly average.
+6. For each meal provide:
    a) Meal name / description
-   b) Specific foods with portion sizes (grams or standard Malaysian measures)
-   c) Estimated macros: Protein (g), Carbs (g), Fat (g), Calories (kcal)
-6. Strictly follow the dietary preference (%s).
-7. IMPORTANT — Allergy consideration: %s. Never include these ingredients.
-8. Use locally available Malaysian foods where possible (nasi lemak, roti canai, ikan bakar, ayam goreng, etc.).
-9. Vary meals across 7 days — avoid repeating the same meal more than twice.
-10. On training-heavy days increase carbohydrate loading by 15–20%% for energy.
-11. On recovery days emphasise anti-inflammatory foods and higher protein.
-12. End with a "Weekly Nutrition Summary" table: Day | Calories | Protein | Carbs | Fat.
-13. STRICT FORMATTING RULES — follow exactly:
+   b) Specific foods with portion sizes (grams or standard Malaysian measures), each food
+      item listing its own macros, e.g.: 2 whole eggs (140g) - 12g Protein, 1g Carbs, 10g Fat, 140kcal.
+      Size the portions/quantities so this meal's own total lands close to its ~%d kcal
+      share of the day (instruction 5) — use multiple food items and larger portions if
+      needed, do not stop at one or two small items.
+   c) End every meal with one line: Total: Xg Protein, Xg Carbs, Xg Fat, Xkcal — where X is
+      the actual sum of that meal's food items added together (show real numbers, not rounded
+      guesses).
+7. CRITICAL — After all of a day's meals, before moving to the next day, show your addition
+   work explicitly like this (using the real Total values from that day's meals):
+   Total daily calories: <meal1>+<meal2>+<meal3> = <sum> kcal
+   Total daily protein: <meal1>+<meal2>+<meal3> = <sum> g
+   Total daily carbs: <meal1>+<meal2>+<meal3> = <sum> g
+   Total daily fat: <meal1>+<meal2>+<meal3> = <sum> g
+   Double-check the addition is correct before writing the result — these are the numbers
+   that will be used in the Weekly Nutrition Summary table, so they must be accurate.
+8. Strictly follow the dietary preference (%s).
+9. IMPORTANT — Allergy consideration: %s. Never include these ingredients.
+10. Use locally available Malaysian foods where possible (nasi lemak, roti canai, ikan bakar, ayam goreng, etc.).
+11. Vary meals across 7 days — avoid repeating the same meal more than twice.
+12. On training-heavy days increase carbohydrate loading by 15–20%% for energy.
+13. On recovery days emphasise anti-inflammatory foods and higher protein.
+14. End with a "Weekly Nutrition Summary" table: Day | Calories | Protein | Carbs | Fat.
+    CRITICAL — Do NOT recompute or re-estimate these numbers for the table. Copy the exact
+    "Total daily calories/protein/carbs/fat" sums you already calculated and showed your
+    work for in instruction 7, for each respective day, directly into this table.
+15. STRICT FORMATTING RULES — follow exactly:
     - Day headings: ## Day 1 (Monday)  (always use "Day N (DayName)" format)
     - Meal headings: ### Meal 1: Breakfast  (always use "Meal N: Name" format)
     - Food items: bullet points under each meal
@@ -287,6 +329,10 @@ Begin the 7-day meal plan now:
                 phase,
                 prepTime,
                 req.getMealsPerDay(),
+                targetCalories,
+                mealsPerDayForCalc,
+                mealCalorieTarget,
+                mealCalorieTarget,
                 req.getDietaryPreference(),
                 allergies
         );
