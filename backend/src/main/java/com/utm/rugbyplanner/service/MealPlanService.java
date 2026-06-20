@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * Responsibilities:
  *   1. Build a rugby-specific 7-day meal prompt from the user's inputs.
  *   2. Estimate the user's TDEE based on weight, height, age and goal.
- *   3. Call OllamaService to generate the plan text.
+ *   3. Call AiService to generate the plan text.
  *   4. Persist the plan to MongoDB.
  *   5. Provide list / delete operations for UC007.
  */
@@ -34,7 +34,7 @@ public class MealPlanService {
 
     private final MealPlanRepository mealPlanRepository;
     private final UserRepository     userRepository;
-    private final OllamaService      ollamaService;
+    private final AiService          aiService;
 
     // ── UC006: Generate a new meal plan ──────────────────────────────────────
 
@@ -45,7 +45,7 @@ public class MealPlanService {
                 username, req.getRugbyPosition(), req.getGoals(), req.getDietaryPreference());
 
         String prompt = buildPrompt(req);
-        String generatedPlan = ollamaService.generate(prompt);
+        String generatedPlan = aiService.generate(prompt);
 
         String goalsLabel = req.getGoals().stream()
                 .map(this::goalLabel)

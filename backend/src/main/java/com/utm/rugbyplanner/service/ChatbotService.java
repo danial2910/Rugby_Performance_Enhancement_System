@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
  *   1. User accesses the AI chatbot through the dashboard / dedicated chat interface
  *   2. System displays the chat interface with a prompt to ask questions
  *   3. User types a question or request related to fitness, nutrition, or system usage
- *   4. System analyses the user input (delegated to the Ollama llama3.2 LLM)
+ *   4. System analyses the user input (delegated to Groq's hosted LLM)
  *   5. AI considers the user's profile, goals, and history for personalisation
  *   6. System "searches the knowledge base" — implemented as a system prompt
  *      describing the platform so the model can answer system-usage questions
@@ -56,7 +56,7 @@ public class ChatbotService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository        userRepository;
     private final AthleteRepository     athleteRepository;
-    private final OllamaService         ollamaService;
+    private final AiService             aiService;
 
     // ── UC011 Step 2: Load chat history when the view mounts ─────────────────
 
@@ -97,7 +97,7 @@ public class ChatbotService {
 
         String replyText;
         try {
-            replyText = ollamaService.generate(prompt);
+            replyText = aiService.generate(prompt);
             if (replyText == null || replyText.isBlank()) {
                 replyText = "I couldn't come up with an answer for that — could you try rephrasing your question?";
             }
@@ -132,7 +132,7 @@ public class ChatbotService {
     // ── Prompt builder ────────────────────────────────────────────────────────
 
     /**
-     * Builds a system + context + conversation prompt for Ollama.
+     * Builds a system + context + conversation prompt for Groq.
      *
      * Personalisation (Normal Flow Step 5): when the caller is an athlete with
      * a profile on file, their goal, position, training level and injury notes

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  *
  * Responsibilities:
  *   1. Build a rugby-specific prompt from the user's inputs.
- *   2. Call OllamaService to generate the plan text.
+ *   2. Call AiService to generate the plan text.
  *   3. Persist the plan to MongoDB.
  *   4. Provide list / delete operations for UC005.
  */
@@ -33,7 +33,7 @@ public class WorkoutPlanService {
 
     private final WorkoutPlanRepository workoutPlanRepository;
     private final UserRepository        userRepository;
-    private final OllamaService         ollamaService;
+    private final AiService             aiService;
 
     // ── UC004: Generate a new workout plan ───────────────────────────────────
 
@@ -46,8 +46,8 @@ public class WorkoutPlanService {
         // Build rugby-specific prompt
         String prompt = buildPrompt(req);
 
-        // Call Ollama llama3.2
-        String generatedPlan = ollamaService.generate(prompt);
+        // Call Groq (AiService)
+        String generatedPlan = aiService.generate(prompt);
 
         // Persist to MongoDB
         String planName = (req.getPlanName() != null && !req.getPlanName().isBlank())
@@ -202,7 +202,7 @@ public class WorkoutPlanService {
     // ── Prompt builder ────────────────────────────────────────────────────────
 
     /**
-     * Builds a detailed, rugby-specific prompt for Ollama llama3.2.
+     * Builds a detailed, rugby-specific prompt for Groq.
      *
      * The prompt is structured to produce a well-formatted weekly workout
      * plan with day-by-day breakdown, sets/reps, and rugby context.

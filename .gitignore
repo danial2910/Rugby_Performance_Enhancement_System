@@ -1,6 +1,8 @@
 # === Backend (Spring Boot / Maven) ===
 backend/target/
-backend/src/main/resources/application.properties
+# application.properties now contains NO real secrets (all values come from
+# environment variables), so it is safe to commit and is needed for Render
+# to find the property keys when it builds the jar.
 
 # === Frontend (Node / Vue) ===
 frontend/node_modules/
