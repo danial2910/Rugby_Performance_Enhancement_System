@@ -54,6 +54,9 @@ public class EmailService {
     @Value("${resend.reply-to}")
     private String replyToEmail;
 
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
+
     // ── Public API ────────────────────────────────────────────────────────────
 
     @Async
@@ -200,7 +203,7 @@ public class EmailService {
 
                         <!-- CTA -->
                         <p style="text-align:center;margin:24px 0 0;">
-                          <a href="http://localhost:5173/appointments"
+                          <a href="%s/appointments"
                              style="display:inline-block;padding:12px 28px;background:%s;color:#ffffff;
                                     text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;">
                             View My Appointments
@@ -236,6 +239,7 @@ public class EmailService {
                 detailRow("⏱ Duration",        appt.getDuration() + " minutes"),
                 detailRow("📍 Location",       locationLabel),
                 remarksBlock,
+                frontendUrl,
                 accentColor
             );
     }

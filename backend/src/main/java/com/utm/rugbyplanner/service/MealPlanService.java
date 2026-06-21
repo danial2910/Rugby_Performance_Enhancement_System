@@ -233,87 +233,34 @@ public class MealPlanService {
         int mealCalorieTarget  = Math.round((float) targetCalories / mealsPerDayForCalc);
 
         return String.format("""
-You are an expert sports nutritionist specialising in rugby performance nutrition for university athletes (UTM Pirates, Malaysia).
+You are a sports nutritionist for rugby athletes (UTM Pirates, Malaysia).
 
-Generate a complete 7-day meal plan for a rugby player with the following profile:
+Generate a 7-day meal plan (Day 1 Monday – Day 7 Sunday).
 
 PLAYER PROFILE:
-- Position: %s
-- Nutrition Goals: %s
-- Physical Stats: %d kg current weight, %d cm height, %d years old
-- Target Weight: %s
-- Estimated Daily Calorie Target: ~%d kcal/day (based on %s activity level)
-- Training Phase: %s
-- Dietary Preference: %s
-- Food Allergies / Intolerances: %s
-- Meals Per Day: %d
-- Meal Prep Time Available: %s
+- Position: %s | Goals: %s
+- Stats: %d kg, %d cm, %d years old | Target Weight: %s
+- Daily Calorie Target: ~%d kcal/day (%s activity) | ~%d kcal per meal
+- Training Phase: %s | Diet: %s | Allergies: %s
+- Meals Per Day: %d | Prep Time: %s
 
-INSTRUCTIONS:
-1. Create a structured plan for Day 1 (Monday) through Day 7 (Sunday).
-2. IMPORTANT — Training phase is %s. Adjust nutrition strategy accordingly:
-   - PRE-SEASON: high carbohydrates for energy-demanding training, moderate protein
-   - IN-SEASON: performance nutrition, carb-timing around matches and training
-   - OFF-SEASON: suit the goal (surplus for muscle gain, deficit for weight loss)
-   - POST-SEASON: recovery focus, anti-inflammatory foods, moderate calories
-3. Meal prep time is %s. Keep meals practical for this constraint:
-   - LOW (under 15 min): simple, ready-to-eat or minimal cooking
-   - MEDIUM (15–30 min): standard cooking, batch-prep friendly
-   - HIGH (30+ min): full recipes, complex preparations are acceptable
-4. Each day must include exactly %d meals clearly labelled.
-5. IMPORTANT — Each day's total calories (the sum of that day's meals' Estimated macros)
-   MUST land within ±10%% of the Estimated Daily Calorie Target (~%d kcal/day) given
-   above. Concretely: that target divided across %d meals/day means each individual
-   meal should average around ~%d kcal — adjust individual meals up or down (a bigger
-   lunch/dinner, a smaller snack) but keep the day's total close to the target. Use
-   generous, calorie-dense portions (rice, oils, nuts, dairy, more protein and carb
-   sources) rather than small, low-calorie servings — small portions are the single
-   most common reason a plan falls far short of the target (e.g. landing at ~1600 kcal
-   when the target is ~4000 kcal is NOT acceptable). Size the actual food portions so
-   the real numbers add up to this target — do not just display the target without
-   choosing foods/portions that reach it. This applies to every individual day, not
-   just the weekly average.
-6. For each meal provide:
-   a) Meal name / description
-   b) Specific foods with portion sizes (grams or standard Malaysian measures), each food
-      item listing its own macros, e.g.: 2 whole eggs (140g) - 12g Protein, 1g Carbs, 10g Fat, 140kcal.
-      Size the portions/quantities so this meal's own total lands close to its ~%d kcal
-      share of the day (instruction 5) — use multiple food items and larger portions if
-      needed, do not stop at one or two small items.
-   c) End every meal with one line: Total: Xg Protein, Xg Carbs, Xg Fat, Xkcal — where X is
-      the actual sum of that meal's food items added together (show real numbers, not rounded
-      guesses).
-7. CRITICAL — After all of a day's meals, before moving to the next day, show your addition
-   work explicitly like this (using the real Total values from that day's meals):
-   Total daily calories: <meal1>+<meal2>+<meal3> = <sum> kcal
-   Total daily protein: <meal1>+<meal2>+<meal3> = <sum> g
-   Total daily carbs: <meal1>+<meal2>+<meal3> = <sum> g
-   Total daily fat: <meal1>+<meal2>+<meal3> = <sum> g
-   Double-check the addition is correct before writing the result — these are the numbers
-   that will be used in the Weekly Nutrition Summary table, so they must be accurate.
-8. Strictly follow the dietary preference (%s).
-9. IMPORTANT — Allergy consideration: %s. Never include these ingredients.
-10. Use locally available Malaysian foods where possible (nasi lemak, roti canai, ikan bakar, ayam goreng, etc.).
-11. Vary meals across 7 days — avoid repeating the same meal more than twice.
-12. On training-heavy days increase carbohydrate loading by 15–20%% for energy.
-13. On recovery days emphasise anti-inflammatory foods and higher protein.
-14. End with a "Weekly Nutrition Summary" table: Day | Calories | Protein | Carbs | Fat.
-    CRITICAL — Do NOT recompute or re-estimate these numbers for the table. Copy the exact
-    "Total daily calories/protein/carbs/fat" sums you already calculated and showed your
-    work for in instruction 7, for each respective day, directly into this table.
-15. STRICT FORMATTING RULES — follow exactly:
-    - Day headings: ## Day 1 (Monday)  (always use "Day N (DayName)" format)
-    - Meal headings: ### Meal 1: Breakfast  (always use "Meal N: Name" format)
-    - Food items: bullet points under each meal
-    - DO NOT use any other heading format for days or meals.
-    Example structure:
-    ## Day 1 (Monday)
-    ### Meal 1: Breakfast
-    - Food item with portion
-    ### Meal 2: Lunch
-    - Food item with portion
+RULES:
+1. Each day has exactly %d meals. Each meal averages ~%d kcal so daily total reaches ~%d kcal (±10%%).
+2. Use generous, calorie-dense portions — do not under-portion.
+3. For each meal list: foods with portions (grams), per-item macros, then a Total line (Protein, Carbs, Fat, kcal).
+4. After each day's meals add: Daily Total: Xg Protein, Xg Carbs, Xg Fat, X kcal.
+5. Diet: %s. Allergies: %s — never include these.
+6. Use Malaysian foods (nasi lemak, roti canai, ikan bakar, ayam goreng, etc.).
+7. Vary meals across 7 days. Increase carbs on training days, emphasise protein on recovery days.
+8. End with a Weekly Nutrition Summary table: Day | Calories | Protein | Carbs | Fat.
 
-Begin the 7-day meal plan now:
+FORMAT (follow exactly):
+## Day 1 (Monday)
+### Meal 1: Breakfast
+- Food item with portion - macros
+Total: Xg Protein, Xg Carbs, Xg Fat, Xkcal
+
+Begin now:
 """,
                 req.getRugbyPosition(),
                 goalsText,
@@ -321,18 +268,15 @@ Begin the 7-day meal plan now:
                 targetWeightStr,
                 targetCalories,
                 req.getActivityLevel(),
+                mealCalorieTarget,
                 phase,
                 req.getDietaryPreference(),
                 allergies,
                 req.getMealsPerDay(),
                 prepTime,
-                phase,
-                prepTime,
                 req.getMealsPerDay(),
+                mealCalorieTarget,
                 targetCalories,
-                mealsPerDayForCalc,
-                mealCalorieTarget,
-                mealCalorieTarget,
                 req.getDietaryPreference(),
                 allergies
         );

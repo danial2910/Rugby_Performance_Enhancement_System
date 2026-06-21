@@ -285,7 +285,7 @@
           <div class="ai-pulse"><span>🤖</span></div>
           <h3>AI is generating your meal plan...</h3>
           <p>
-            Ollama <strong>llama3.2</strong> is building a personalised
+            Llama <strong>3.3</strong> is building a personalised
             <strong>7-day</strong> nutrition plan for a
             <strong>{{ form.rugbyPosition || 'rugby player' }}</strong>
             following a <strong>{{ dietLabel(form.dietaryPreference) || '' }}</strong> diet.

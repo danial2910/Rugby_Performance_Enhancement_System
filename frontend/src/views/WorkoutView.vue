@@ -269,7 +269,7 @@
           <div class="ai-pulse"><span>🤖</span></div>
           <h3>AI is generating your plan...</h3>
           <p>
-            Ollama <strong>llama3.2</strong> is building a personalised
+            Llama <strong>3.3</strong> is building a personalised
             <strong>{{ form.sessionsPerWeek }}-day</strong> workout plan
             for a <strong>{{ form.rugbyPosition || 'rugby player' }}</strong>.
           </p>
