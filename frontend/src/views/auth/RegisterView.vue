@@ -53,12 +53,13 @@
             <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
           </div>
 
-          <div class="form-group">
+          <div class="form-group" :class="{ 'has-error': errors.phoneNumber }">
             <label class="form-label">Phone number <span class="optional-tag">optional</span></label>
             <div class="input-wrapper">
               <span class="input-icon">📱</span>
-              <input v-model="form.phoneNumber" type="tel" class="form-input" placeholder="+601X XXXX XXXX" />
+              <input v-model="form.phoneNumber" type="tel" class="form-input" placeholder="+601X XXXX XXXX" @input="clearError('phoneNumber')" />
             </div>
+            <p v-if="errors.phoneNumber" class="field-error">{{ errors.phoneNumber }}</p>
           </div>
 
           <button type="button" class="btn-next" @click="nextStep">Continue →</button>
@@ -180,6 +181,7 @@ const form = reactive({
 const errors = reactive({
   fullName: '',
   email: '',
+  phoneNumber: '',
   username: '',
   password: '',
   confirmPassword: '',
@@ -260,9 +262,17 @@ async function handleRegister() {
     userRole: form.userRole
   })
   loading.value = false
-  if (authStore.error) errorMsg.value = authStore.error
-  if (fieldErrors) {
+  if (fieldErrors && Object.keys(fieldErrors).length) {
     Object.keys(fieldErrors).forEach(k => { if (errors[k] !== undefined) errors[k] = fieldErrors[k] })
+    const step1Fields = ['fullName', 'email', 'phoneNumber']
+    const step2Fields = ['username', 'password', 'confirmPassword']
+    const errorKeys = Object.keys(fieldErrors)
+    if (errorKeys.some(k => step1Fields.includes(k))) currentStep.value = 1
+    else if (errorKeys.some(k => step2Fields.includes(k))) currentStep.value = 2
+    const messages = Object.values(fieldErrors)
+    errorMsg.value = messages.join('. ')
+  } else if (authStore.error) {
+    errorMsg.value = authStore.error
   }
 }
 </script>

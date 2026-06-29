@@ -72,8 +72,12 @@ export const useAuthStore = defineStore('auth', () => {
       return { fieldErrors: null }
     } catch (err) {
       if (err.response?.status === 422) {
-        error.value = err.response.data?.message || 'Please correct the errors below.'
-        return { fieldErrors: err.response.data?.data || {} }
+        const fields = err.response.data?.data || {}
+        const fieldMessages = Object.values(fields)
+        error.value = fieldMessages.length
+          ? fieldMessages.join('. ')
+          : (err.response.data?.message || 'Please correct the errors below.')
+        return { fieldErrors: fields }
       }
       if (err.response?.status === 409) {
         error.value = err.response.data?.message || 'This email or username is already registered.'
