@@ -158,7 +158,7 @@ public class EmailService {
                                   String remarksBlock, String borderColor) {
         String formattedDate = formatDate(appt.getDate());
         String serviceLabel  = serviceLabel(appt.getServiceType());
-        String locationLabel = "GYM".equals(appt.getLocation()) ? "🏋️ Gym" : "💻 Online";
+        String locationLabel = "FACE_TO_FACE".equals(appt.getLocation()) ? "🤝 Face to Face" : "💻 Online";
 
         return """
             <!DOCTYPE html>

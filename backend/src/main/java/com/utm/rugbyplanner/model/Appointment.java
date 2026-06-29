@@ -47,7 +47,7 @@ public class Appointment {
     /** Session length in minutes: 30 | 45 | 60 | 90 */
     private Integer duration;
 
-    /** GYM | ONLINE */
+    /** FACE_TO_FACE | ONLINE */
     private String location;
 
     /** Why the athlete wants this appointment */

@@ -56,7 +56,7 @@
                 <label class="form-label">Location <span class="req">*</span></label>
                 <select v-model="form.location" class="form-select" @change="clearErr('location')">
                   <option value="" disabled>Select location</option>
-                  <option value="GYM">🏋️ Gym</option>
+                  <option value="FACE_TO_FACE">🤝 Face to Face</option>
                   <option value="ONLINE">💻 Online</option>
                 </select>
                 <p v-if="errors.location" class="field-error">{{ errors.location }}</p>
@@ -302,7 +302,7 @@
                   <label class="form-label">Location <span class="req">*</span></label>
                   <select v-model="editForm.location" class="form-select" @change="clearEditErr('location')">
                     <option value="" disabled>Select location</option>
-                    <option value="GYM">🏋️ Gym</option>
+                    <option value="FACE_TO_FACE">🤝 Face to Face</option>
                     <option value="ONLINE">💻 Online</option>
                   </select>
                   <p v-if="editErrors.location" class="field-error">{{ editErrors.location }}</p>
@@ -951,7 +951,7 @@ function serviceLabel(s) {
 }
 
 function locationLabel(l) {
-  return l === 'GYM' ? '🏋️ Gym' : l === 'ONLINE' ? '💻 Online' : l || ''
+  return l === 'FACE_TO_FACE' ? '🤝 Face to Face' : l === 'ONLINE' ? '💻 Online' : l || ''
 }
 </script>
 

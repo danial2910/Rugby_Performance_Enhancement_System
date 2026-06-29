@@ -76,7 +76,7 @@
                   <span>📅 {{ formatApptDate(appt.date) }}</span>
                   <span>🕐 {{ appt.time }}</span>
                   <span>⏱ {{ appt.duration }} min</span>
-                  <span>{{ appt.location === 'GYM' ? '🏋️ Gym' : '💻 Online' }}</span>
+                  <span>{{ appt.location === 'FACE_TO_FACE' ? '🤝 Face to Face' : '💻 Online' }}</span>
                 </div>
               </div>
             </div>
@@ -137,7 +137,7 @@
                     <span>📅 {{ formatApptDate(appt.date) }}</span>
                     <span>🕐 {{ appt.time }}</span>
                     <span>⏱ {{ appt.duration }} min</span>
-                    <span>{{ appt.location === 'GYM' ? '🏋️ Gym' : '💻 Online' }}</span>
+                    <span>{{ appt.location === 'FACE_TO_FACE' ? '🤝 Face to Face' : '💻 Online' }}</span>
                   </div>
                 </div>
               </div>

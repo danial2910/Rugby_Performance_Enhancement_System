@@ -334,7 +334,7 @@
                   <span>📅 {{ formatApptDate(appt.date) }}</span>
                   <span>🕐 {{ appt.time }}</span>
                   <span>⏱ {{ appt.duration }} min</span>
-                  <span>{{ appt.location === 'GYM' ? '🏋️ Gym' : '💻 Online' }}</span>
+                  <span>{{ appt.location === 'FACE_TO_FACE' ? '🤝 Face to Face' : '💻 Online' }}</span>
                 </div>
               </div>
             </div>
@@ -421,7 +421,7 @@
               <div class="feedback-avatar">{{ initials(appt.trainerName) }}</div>
               <div class="feedback-trainer-info">
                 <div class="feedback-trainer-name">{{ appt.trainerName }}</div>
-                <div class="feedback-meta">🕐 {{ appt.time }} · ⏱ {{ appt.duration }} min · {{ appt.location === 'GYM' ? '🏋️ Gym' : '💻 Online' }}</div>
+                <div class="feedback-meta">🕐 {{ appt.time }} · ⏱ {{ appt.duration }} min · {{ appt.location === 'FACE_TO_FACE' ? '🤝 Face to Face' : '💻 Online' }}</div>
               </div>
             </div>
             <div class="feedback-message-box">
