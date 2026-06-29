@@ -13,7 +13,7 @@ import http from './http'
 
 const workoutService = {
   async generatePlan(payload) {
-    // Ollama generation can take 30–90 seconds — override the default 10s timeout
+    // AI generation can take 30–90 seconds — override the default 10s timeout
     const { data } = await http.post('/workout/generate', payload, { timeout: 120000 })
     return data
   },

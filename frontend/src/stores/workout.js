@@ -13,7 +13,7 @@ export const useWorkoutStore = defineStore('workout', () => {
   const error           = ref(null)
   const generateSuccess = ref(false)
 
-  /** UC004: Generate a new workout plan via Ollama */
+  /** UC004: Generate a new workout plan via Gemini */
   async function generatePlan(payload) {
     generating.value      = true
     error.value           = null
@@ -31,11 +31,11 @@ export const useWorkoutStore = defineStore('workout', () => {
     } catch (err) {
       if (err.response?.status === 503) {
         error.value = err.response.data?.message ||
-          'AI engine is not available. Please make sure Ollama is running.'
+          'AI engine is not available. Please try again shortly.'
       } else if (err.response?.status === 400) {
         error.value = err.response.data?.message || 'Please check your inputs.'
       } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        error.value = 'Request timed out. Ollama is taking too long — try again or use a shorter prompt.'
+        error.value = 'Request timed out. AI generation is taking too long — try again or use a shorter prompt.'
       } else if (!err.response) {
         error.value = 'Connection error. Please check that the backend server is running.'
       } else {

@@ -11,7 +11,8 @@
  * /login          → LoginView        (public)
  * /register       → RegisterView     (public - UC002)
  * /dashboard      → DashboardView    (protected - ATHLETE)
- * /trainer          → redirect → /trainer/workouts
+ * /trainer          → redirect → /trainer/dashboard
+ * /trainer/dashboard → TrainerDashboardView (protected - TRAINER)
  * /trainer/workouts → TrainerWorkoutView (protected - TRAINER)
  * /trainer/meals    → TrainerMealView    (protected - TRAINER)
  * /meal-planner   → MealPlannerView  (protected)
@@ -26,6 +27,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const LoginView       = () => import('@/views/auth/LoginView.vue')
 const RegisterView    = () => import('@/views/auth/RegisterView.vue')
 const DashboardView        = () => import('@/views/DashboardView.vue')
+const TrainerDashboardView = () => import('@/views/TrainerDashboardView.vue')
 const TrainerWorkoutView   = () => import('@/views/TrainerWorkoutView.vue')
 const TrainerMealView      = () => import('@/views/TrainerMealView.vue')
 const MealPlannerView = () => import('@/views/MealPlannerView.vue')
@@ -89,7 +91,17 @@ const routes = [
       },
       {
         path: 'trainer',
-        redirect: '/trainer/workouts'
+        redirect: '/trainer/dashboard'
+      },
+      {
+        path: 'trainer/dashboard',
+        name: 'TrainerDashboard',
+        component: TrainerDashboardView,
+        meta: {
+          requiresAuth: true,
+          role: 'TRAINER',
+          title: 'Trainer Dashboard — Rugby Performance Enhancement System'
+        }
       },
       {
         path: 'trainer/workouts',
@@ -202,14 +214,14 @@ router.beforeEach((to, from, next) => {
   // Already logged in → don't show login/register page
   if (!to.meta.requiresAuth && isLoggedIn && (to.name === 'Login' || to.name === 'Register')) {
     const destination = userRole === 'ADMIN' ? '/admin'
-                      : userRole === 'TRAINER' ? '/trainer/workouts'
+                      : userRole === 'TRAINER' ? '/trainer/dashboard'
                       : '/dashboard'
     return next(destination)
   }
 
   // Role-based guard: ADMIN-only routes
   if (to.meta.role === 'ADMIN' && userRole !== 'ADMIN') {
-    const fallback = userRole === 'TRAINER' ? '/trainer/workouts' : '/dashboard'
+    const fallback = userRole === 'TRAINER' ? '/trainer/dashboard' : '/dashboard'
     return next(fallback)
   }
 
@@ -220,7 +232,7 @@ router.beforeEach((to, from, next) => {
 
   // Role-based guard: ATHLETE-only routes
   if (to.meta.role === 'ATHLETE' && userRole !== 'ATHLETE') {
-    return next(userRole === 'ADMIN' ? '/admin' : '/trainer/workouts')
+    return next(userRole === 'ADMIN' ? '/admin' : '/trainer/dashboard')
   }
 
   next()

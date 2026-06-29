@@ -14,7 +14,7 @@ const chatbotService = {
   },
 
   async sendMessage(message) {
-    // Ollama generation can take a while — override the default 10s timeout
+    // AI generation can take a while — override the default 10s timeout
     const { data } = await http.post('/chatbot/message', { message }, { timeout: 120000 })
     return data
   },

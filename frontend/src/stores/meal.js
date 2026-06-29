@@ -13,7 +13,7 @@ export const useMealStore = defineStore('meal', () => {
   const error           = ref(null)
   const generateSuccess = ref(false)
 
-  /** UC006: Generate a new 7-day meal plan via Ollama */
+  /** UC006: Generate a new 7-day meal plan via Gemini */
   async function generatePlan(payload) {
     generating.value      = true
     error.value           = null
@@ -31,11 +31,11 @@ export const useMealStore = defineStore('meal', () => {
     } catch (err) {
       if (err.response?.status === 503) {
         error.value = err.response.data?.message ||
-          'AI engine is not available. Please make sure Ollama is running.'
+          'AI engine is not available. Please try again shortly.'
       } else if (err.response?.status === 400) {
         error.value = err.response.data?.message || 'Please check your inputs.'
       } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-        error.value = 'Request timed out. Ollama is taking too long — please try again.'
+        error.value = 'Request timed out. AI generation is taking too long — please try again.'
       } else if (!err.response) {
         error.value = 'Connection error. Please check that the backend server is running.'
       } else {

@@ -13,7 +13,7 @@ import http from './http'
 
 const mealService = {
   async generatePlan(payload) {
-    // 7-day meal generation can take 2-4 minutes on llama3.2 — use extended timeout
+    // 7-day meal generation can take a while — use extended timeout
     const { data } = await http.post('/meal/generate', payload, { timeout: 250000 })
     return data
   },

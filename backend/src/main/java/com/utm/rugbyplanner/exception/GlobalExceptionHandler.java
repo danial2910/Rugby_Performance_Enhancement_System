@@ -4,6 +4,7 @@ import com.utm.rugbyplanner.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
@@ -24,6 +25,7 @@ import java.util.Map;
  *   400 → ValidationException           (password mismatch, custom rules)
  *   401 → BadCredentialsException       (UC001 AF1 — wrong password)
  *   401 → DisabledException             (account disabled)
+ *   403 → AccessDeniedException         (role-based access denied)
  *   409 → DuplicateResourceException    (UC002 AF2 — email/username taken)
  *   422 → MethodArgumentNotValidException (UC001/UC002 AF1 — @Valid failures)
  *   500 → Exception                     (unexpected server errors)
@@ -115,6 +117,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(
                         "Your account has been disabled. Please contact the administrator."
                 ));
+    }
+
+    /**
+     * Role-based access denied (e.g. @PreAuthorize("hasRole('ADMIN')") rejection).
+     * HTTP 403 Forbidden
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Access denied."));
     }
 
     /**

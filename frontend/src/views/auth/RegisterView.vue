@@ -39,7 +39,7 @@
             <label class="form-label">Full name</label>
             <div class="input-wrapper">
               <span class="input-icon">👤</span>
-              <input v-model="form.fullName" type="text" class="form-input" placeholder="e.g. Muhammad Danial Syafiq" @input="clearError('fullName')" />
+              <input v-model="form.fullName" type="text" class="form-input" placeholder="e.g. Ali Bin Abu" @input="clearError('fullName')" />
             </div>
             <p v-if="errors.fullName" class="field-error">{{ errors.fullName }}</p>
           </div>
@@ -48,7 +48,7 @@
             <label class="form-label">Email address</label>
             <div class="input-wrapper">
               <span class="input-icon">✉</span>
-              <input v-model="form.email" type="email" class="form-input" placeholder="you@utm.my" @input="clearError('email')" />
+              <input v-model="form.email" type="email" class="form-input" placeholder="you@gmail.com" @input="clearError('email')" />
             </div>
             <p v-if="errors.email" class="field-error">{{ errors.email }}</p>
           </div>

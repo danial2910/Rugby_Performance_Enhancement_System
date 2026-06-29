@@ -35,7 +35,8 @@
 
         <!-- Trainer nav -->
         <template v-if="authStore.isTrainer">
-          <p class="nav-section-label">Trainer</p>
+          <p class="nav-section-label">Main</p>
+          <RouterLink to="/trainer/dashboard" class="nav-item"><span class="nav-icon">📊</span>Dashboard</RouterLink>
           <RouterLink to="/profile"           class="nav-item"><span class="nav-icon">👤</span>My Profile</RouterLink>
           <RouterLink to="/appointments"      class="nav-item"><span class="nav-icon">📅</span>Appointments</RouterLink>
           <p class="nav-section-label">Plan Management</p>
@@ -65,7 +66,7 @@
       <header class="app-header">
         <h1 class="page-title">{{ pageTitle }}</h1>
         <div class="header-actions">
-          <RouterLink to="/chatbot" class="btn btn-ghost">💬 Ask AI</RouterLink>
+          <RouterLink v-if="!authStore.isTrainer" to="/chatbot" class="btn btn-ghost">💬 Ask AI</RouterLink>
           <button class="btn btn-danger-ghost" @click="handleLogout">
             Sign Out
           </button>
@@ -99,7 +100,8 @@ const initials = computed(() => {
 })
 
 const pageTitles = {
-  Dashboard:       'Dashboard',
+  Dashboard:        'Dashboard',
+  TrainerDashboard: 'Trainer Dashboard',
   TrainerWorkouts: 'Workout Plan Management',
   TrainerMeals:     'Meal Plan Management',
   MealPlanner:      'Meal Planner',
