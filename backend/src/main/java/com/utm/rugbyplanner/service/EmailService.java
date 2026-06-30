@@ -22,13 +22,25 @@ import java.util.Map;
 /**
  * EmailService — UC010: Send email notification to athlete
  *
- * Sends an HTML email via Resend's HTTPS API to the athlete's email whenever
+ * Sends an HTML email via Brevo's HTTPS API to the athlete's email whenever
  * a trainer approves or rejects their appointment.
  *
  * NOTE: this used to go through Gmail SMTP via JavaMailSender, but Render's
  * free tier blocks outbound traffic on SMTP ports (25/465/587) to fight spam,
- * which caused every send to time out in production. Resend uses a plain
- * HTTPS API call instead, so it isn't affected by that block.
+ * which caused every send to time out in production. An HTTPS API call isn't
+ * affected by that block, which is why this has gone through a few providers:
+ *
+ * Gmail SMTP → Resend: Resend's free/testing tier only allows sending to the
+ * account owner's own email until a verified domain is added.
+ *
+ * Resend → SendGrid: SendGrid's free tier looked like a permanent allowance,
+ * but turned out to be a one-time 60-day trial — the dashboard confirmed
+ * "End Of Trial — 0 emails/month", and sends started failing with "Maximum
+ * credits exceeded".
+ *
+ * SendGrid → Brevo: Brevo's free plan is genuinely perpetual — 300 emails/day,
+ * no credit card required — and supports Single Sender Verification (verify
+ * one from-address via a 6-digit code emailed to it, no domain/DNS needed).
  *
  * Emails are sent asynchronously so they never block the HTTP response.
  * If sending fails, the error is logged but the appointment action still succeeds.
@@ -42,16 +54,19 @@ public class EmailService {
             .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
 
-    @Value("${resend.api.url}")
-    private String resendApiUrl;
+    @Value("${brevo.api.url}")
+    private String brevoApiUrl;
 
-    @Value("${resend.from-email}")
+    @Value("${brevo.from-email}")
     private String fromEmail;
 
-    @Value("${resend.reply-to}")
+    @Value("${brevo.from-name}")
+    private String fromName;
+
+    @Value("${brevo.reply-to}")
     private String replyToEmail;
 
     @Value("${app.frontend-url}")
@@ -78,36 +93,42 @@ public class EmailService {
     // ── Internal send ─────────────────────────────────────────────────────────
 
     private void send(String to, String subject, String htmlBody) {
-        if (resendApiKey == null || resendApiKey.isBlank()) {
-            log.error("UC010 Skipped sending email to {} — RESEND_API_KEY is not set", to);
+        if (brevoApiKey == null || brevoApiKey.isBlank()) {
+            log.error("UC010 Skipped sending email to {} — BREVO_API_KEY is not set", to);
             return;
         }
         try {
+            Map<String, Object> sender = new LinkedHashMap<>();
+            sender.put("name", fromName);
+            sender.put("email", fromEmail);
+
             Map<String, Object> payload = new LinkedHashMap<>();
-            payload.put("from", fromEmail);
-            payload.put("to", List.of(to));
+            payload.put("sender", sender);
+            payload.put("to", List.of(Map.of("email", to)));
             payload.put("subject", subject);
-            payload.put("html", htmlBody);
+            payload.put("htmlContent", htmlBody);
             if (replyToEmail != null && !replyToEmail.isBlank()) {
-                payload.put("reply_to", List.of(replyToEmail));
+                payload.put("replyTo", Map.of("email", replyToEmail));
             }
 
             String jsonBody = objectMapper.writeValueAsString(payload);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(resendApiUrl))
+                    .uri(URI.create(brevoApiUrl))
                     .timeout(Duration.ofSeconds(10))
-                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("api-key", brevoApiKey)
+                    .header("accept", "application/json")
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            // Brevo returns 201 Created with {"messageId": "..."} on success.
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 log.info("UC010 Email sent to {} — subject: {}", to, subject);
             } else {
-                log.error("UC010 Failed to send email to {} — Resend returned {}: {}",
+                log.error("UC010 Failed to send email to {} — Brevo returned {}: {}",
                         to, response.statusCode(), response.body());
             }
         } catch (Exception e) {
