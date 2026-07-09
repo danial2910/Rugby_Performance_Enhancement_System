@@ -9,7 +9,7 @@
         class="btn-ghost"
         type="button"
         :disabled="loadingHistory || messages.length === 0"
-        @click="confirmClear"
+        @click="chatbotStore.clearHistory()"
       >
         Clear chat
       </button>
@@ -125,12 +125,6 @@ async function send(text) {
   draft.value = ''
   await chatbotStore.sendMessage(value)
   await scrollToBottom()
-}
-
-function confirmClear() {
-  if (window.confirm('Clear this conversation? This cannot be undone.')) {
-    chatbotStore.clearHistory()
-  }
 }
 
 async function scrollToBottom() {

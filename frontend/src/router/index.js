@@ -147,6 +147,7 @@ const routes = [
         component: ChatbotView,
         meta: {
           requiresAuth: true,
+          role: 'ATHLETE',
           title: 'AI Chatbot — Rugby Performance Enhancement System'
         }
       },

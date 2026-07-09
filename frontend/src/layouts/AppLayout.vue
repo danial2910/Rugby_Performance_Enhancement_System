@@ -66,7 +66,7 @@
       <header class="app-header">
         <h1 class="page-title">{{ pageTitle }}</h1>
         <div class="header-actions">
-          <RouterLink v-if="!authStore.isTrainer" to="/chatbot" class="btn btn-ghost">💬 Ask AI</RouterLink>
+          <RouterLink v-if="authStore.isAthlete" to="/chatbot" class="btn btn-ghost">💬 Ask AI</RouterLink>
           <button class="btn btn-danger-ghost" @click="handleLogout">
             Sign Out
           </button>
