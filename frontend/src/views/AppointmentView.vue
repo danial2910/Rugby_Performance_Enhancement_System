@@ -1275,4 +1275,25 @@ function locationLabel(l) {
 .slide-down-leave-to     { opacity: 0; transform: translateY(-10px); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s; }
 .fade-enter-from, .fade-leave-to       { opacity: 0; }
+
+/* ── Mobile ───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Let the action buttons drop to a full-width row below the
+     details instead of crushing the title/meta into a thin column. */
+  .appt-item    { flex-wrap: wrap; }
+  .appt-actions { width: 100%; justify-content: flex-start; margin-top: 12px; }
+  .appt-service { font-size: 15px; }
+  /* Roomier meta rows: each stat gets a comfortable amount of space */
+  .appt-meta    { gap: 8px 16px; }
+}
+
+@media (max-width: 480px) {
+  /* Fixed-width trainer-list columns don't fit a narrow phone screen —
+     let each column take the full row and its text wrap instead of clip. */
+  .tl-main     { gap: 10px; }
+  .tl-athlete  { min-width: 0; flex: 1 1 100%; }
+  .tl-datetime, .tl-dur, .tl-purpose { flex: 1 1 100%; min-width: 0; }
+  .tl-col-main, .tl-col-sub, .tl-service { white-space: normal; }
+  .tl-right    { flex: 1 1 100%; align-items: flex-start; margin-left: 0; }
+}
 </style>

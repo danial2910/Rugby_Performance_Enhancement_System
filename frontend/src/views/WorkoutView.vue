@@ -923,13 +923,13 @@ function renderMarkdown(text) {
     }
     bodyRows = bodyRows.filter(r => !isSeparatorRow(r))
 
-    let html = '<table class="md-table">'
+    let html = '<div class="md-table-wrap"><table class="md-table">'
     if (headerRow) {
       html += '<thead><tr>' + headerRow.map(c => `<th>${mdInlineFormat(c)}</th>`).join('') + '</tr></thead>'
     }
     html += '<tbody>' + bodyRows.map(r =>
       '<tr>' + r.map(c => `<td>${mdInlineFormat(c)}</td>`).join('') + '</tr>'
-    ).join('') + '</tbody></table>'
+    ).join('') + '</tbody></table></div>'
 
     const token = `@@TABLE_${tables.length}@@`
     tables.push(html)
@@ -1350,6 +1350,9 @@ function renderMarkdown(text) {
 .plan-markdown :deep(.md-p)  { font-size: 14px; line-height: 1.7; color: var(--color-text-dim); margin: 8px 0; }
 .plan-markdown :deep(.md-ul) { padding-left: 18px; margin: 8px 0; display: flex; flex-direction: column; gap: 5px; }
 .plan-markdown :deep(li)     { font-size: 14px; line-height: 1.6; color: var(--color-text-dim); }
+.plan-markdown :deep(.md-table-wrap) {
+  display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
 .plan-markdown :deep(.md-table) {
   width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px;
   border: 1px solid var(--color-border); border-radius: var(--radius-sm); overflow: hidden;
@@ -1411,5 +1414,15 @@ function renderMarkdown(text) {
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .workout-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  /* Stack the plan header so the title/tags get the full width
+     instead of being squeezed by the action buttons. */
+  .plan-display-header { flex-direction: column; gap: 12px; }
+  .plan-header-actions { width: 100%; justify-content: flex-start; }
+  .plan-display-title  { font-size: 20px; }
+}
+@media (max-width: 480px) {
+  .form-row, .form-row.three-col { grid-template-columns: 1fr; }
 }
 </style>

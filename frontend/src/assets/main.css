@@ -103,3 +103,30 @@ body {
 }
 .page-enter-from { opacity: 0; transform: translateY(6px); }
 .page-leave-to   { opacity: 0; transform: translateY(-4px); }
+
+/* ============================================
+   AI plan tables — scrollable, never squished
+   ============================================ */
+/* Tables are wrapped in .md-table-wrap by the markdown renderer so the
+   table keeps its natural column widths and scrolls horizontally inside
+   the wrapper rather than crushing every cell to fit. */
+.md-table-wrap {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   Global mobile content polish (≤ 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  /* Media never forces horizontal page scroll */
+  img, video, canvas, svg { max-width: 100%; }
+
+  /* Give plan-table columns real breathing room, then scroll */
+  .md-table { min-width: 480px; }
+
+  /* Keep momentum scrolling on any explicit table wrapper */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+}

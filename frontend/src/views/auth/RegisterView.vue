@@ -349,5 +349,34 @@ async function handleRegister() {
 .btn-back:hover { background: #212c24; color: #e8f0ea; }
 .signin-link { text-align: center; font-size: 13.5px; color: #6b8574; margin-top: 20px; }
 .signin-anchor { color: #22a85c; text-decoration: none; font-weight: 500; }
-@media (max-width: 768px) { .register-page { grid-template-columns: 1fr; } .register-brand { padding: 28px 24px; } .brand-title { font-size: 34px; } .step-progress { flex-direction: row; } .step-label { display: none; } .register-form-panel { padding: 32px 20px; } .role-grid { grid-template-columns: 1fr; } .password-rules { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+  .register-page { grid-template-columns: 1fr; border-radius: 0; min-height: 100vh; height: auto; }
+  .register-brand { padding: 28px 24px; }
+  .brand-title { font-size: 30px; }
+  .brand-tagline { margin-bottom: 24px; }
+  .step-progress { flex-direction: row; margin-bottom: 0; gap: 10px; }
+  .step-label { display: none; }
+  .register-form-panel { padding: 32px 20px; }
+  .role-grid { grid-template-columns: 1fr; }
+  .password-rules { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .register-page { max-width: 100%; }
+  .register-brand { padding: 24px 20px; }
+  .brand-inner { max-width: 100%; }
+  .brand-logo-img { width: 88px; height: 88px; }
+  .brand-title { font-size: 24px; }
+  .brand-tagline { font-size: 13px; }
+  .brand-credit { font-size: 11px; }
+  .register-form-panel { padding: 24px 16px; }
+  .register-card { max-width: 100%; }
+  .card-title { font-size: 24px; }
+  .card-subtitle { font-size: 12.5px; }
+  .form-input { padding: 10px 12px 10px 36px; font-size: 16px; }
+  .role-card { padding: 16px 12px; }
+  .btn-next { min-width: 0; flex: 1; padding: 12px 16px; }
+  .btn-back { padding: 12px 16px; }
+  .form-actions.actions-split { gap: 10px; }
+}
 </style>

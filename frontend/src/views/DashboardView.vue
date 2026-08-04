@@ -1304,4 +1304,21 @@ function phaseLabel(phase) {
 /* ── Slide-down transition ──────────────────────────────────────────────────── */
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.3s ease; }
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-10px); }
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Welcome header: stack, tighten padding, size down the big name */
+  .welcome-header { padding: 18px 16px; }
+  .welcome-name   { font-size: 24px; }
+  .welcome-avatar { width: 48px; height: 48px; font-size: 17px; }
+  /* Stats span the full width and share the row evenly */
+  .welcome-stats  { width: 100%; }
+  .welcome-stats .stat-pill { flex: 1; min-width: 0; padding: 10px 8px; }
+
+  /* Card grids never demand 300px on a narrow phone → single column */
+  .updates-grid,
+  .appt-reminder-grid,
+  .feedback-grid,
+  .loading-grid { grid-template-columns: 1fr; }
+}
 </style>

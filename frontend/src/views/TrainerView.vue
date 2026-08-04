@@ -484,7 +484,7 @@ function renderMarkdown(text) {
     const thead = '<thead><tr>' + headerRow.map(c => `<th>${mdInlineFormat(c)}</th>`).join('') + '</tr></thead>'
     const tbody = '<tbody>' + bodyRows.map(r => '<tr>' + r.map(c => `<td>${mdInlineFormat(c)}</td>`).join('') + '</tr>').join('') + '</tbody>'
     const token = `@@TABLE_${tables.length}@@`
-    tables.push(`<table class="md-table">${thead}${tbody}</table>`)
+    tables.push(`<div class="md-table-wrap"><table class="md-table">${thead}${tbody}</table></div>`)
     return token + '\n'
   })
 

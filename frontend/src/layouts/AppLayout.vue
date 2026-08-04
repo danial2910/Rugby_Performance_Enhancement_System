@@ -1,7 +1,7 @@
 <template>
   <!-- App Layout: sidebar + header + main content -->
   <!-- Used by all authenticated routes -->
-  <div class="app-layout">
+  <div class="app-layout" :class="{ 'is-admin': authStore.isAdmin }">
 
     <!-- ── Sidebar ──────────────────────────────────── -->
     <aside class="sidebar">
@@ -83,21 +83,114 @@
       </main>
     </div>
 
+    <!-- ── Mobile Bottom Tab Bar (mobile only; hidden when no tabs, e.g. admin) ── -->
+    <nav v-if="bottomTabs.length" class="bottom-nav">
+      <RouterLink
+        v-for="tab in bottomTabs"
+        :key="tab.to"
+        :to="tab.to"
+        class="tab-item"
+      >
+        <span class="tab-icon">{{ tab.icon }}</span>
+        <span class="tab-label">{{ tab.label }}</span>
+      </RouterLink>
+      <button
+        class="tab-item"
+        :class="{ 'tab-item-active': moreActive }"
+        @click="showMore = true"
+      >
+        <span class="tab-icon">⋯</span>
+        <span class="tab-label">More</span>
+      </button>
+    </nav>
+
+    <!-- ── "More" Bottom Sheet (mobile only) ─────────── -->
+    <Transition name="sheet">
+      <div v-if="showMore" class="sheet-backdrop" @click="showMore = false">
+        <div class="more-sheet" @click.stop>
+          <div class="sheet-handle"></div>
+
+          <div class="sheet-user">
+            <div class="avatar">
+              <img v-if="authStore.profilePicture" :src="authStore.profilePicture" alt="Profile" class="avatar-img" />
+              <span v-else>{{ initials }}</span>
+            </div>
+            <div class="user-info">
+              <p class="user-name">{{ authStore.fullName }}</p>
+              <p class="user-role">{{ authStore.userRole }}</p>
+            </div>
+          </div>
+
+          <div class="sheet-links">
+            <RouterLink
+              v-for="item in moreItems"
+              :key="item.to"
+              :to="item.to"
+              class="sheet-item"
+              @click="showMore = false"
+            >
+              <span class="tab-icon">{{ item.icon }}</span>{{ item.label }}
+            </RouterLink>
+          </div>
+
+          <button class="sheet-item sheet-signout" @click="handleLogout">
+            <span class="tab-icon">🚪</span>Sign Out
+          </button>
+        </div>
+      </div>
+    </Transition>
+
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
 const route     = useRoute()
 
+const showMore = ref(false)
+
+// Close the "More" sheet whenever the route changes
+watch(() => route.fullPath, () => { showMore.value = false })
+
 const initials = computed(() => {
   const name = authStore.fullName || authStore.username || '?'
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 })
+
+// ── Mobile navigation (bottom tab bar + "More" sheet) ──────────────
+// First 4 items become bottom tabs; the rest overflow into "More".
+const navItems = computed(() => {
+  // Admin only has the User Management page — no bottom tabs needed.
+  if (authStore.isAdmin) return []
+  if (authStore.isTrainer) {
+    return [
+      { to: '/trainer/dashboard', icon: '📊', label: 'Dashboard' },
+      { to: '/trainer/workouts',  icon: '💪', label: 'Workouts' },
+      { to: '/trainer/meals',     icon: '🥗', label: 'Meals' },
+      { to: '/appointments',      icon: '📅', label: 'Appts' },
+      { to: '/profile',           icon: '👤', label: 'Profile' }
+    ]
+  }
+  // Athlete (default)
+  return [
+    { to: '/dashboard',    icon: '📊', label: 'Dashboard' },
+    { to: '/meal-planner', icon: '🥗', label: 'Meals' },
+    { to: '/workout',      icon: '🏋️', label: 'Workout' },
+    { to: '/chatbot',      icon: '💬', label: 'AI Chat' },
+    { to: '/appointments', icon: '📅', label: 'Appts' },
+    { to: '/profile',      icon: '👤', label: 'Profile' }
+  ]
+})
+
+const bottomTabs = computed(() => navItems.value.slice(0, 4))
+const moreItems  = computed(() => navItems.value.slice(4))
+const moreActive = computed(() =>
+  moreItems.value.some(item => route.path.startsWith(item.to))
+)
 
 const pageTitles = {
   Dashboard:        'Dashboard',
@@ -343,5 +436,167 @@ async function handleLogout() {
   background: var(--color-error-bg);
   color: var(--color-error);
   border-color: var(--color-error-border);
+}
+
+/* ── Mobile bottom nav + sheet (hidden on desktop) ──── */
+.bottom-nav { display: none; }
+.sheet-backdrop { display: none; }
+
+/* ═══════════════════════════════════════════════════════
+   MOBILE  (≤ 768px)
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Single-column: drop the fixed sidebar */
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    display: none;
+  }
+
+  /* Compact header */
+  .app-header {
+    height: 52px;
+    padding: 0 16px;
+  }
+  .page-title {
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Logout + Ask-AI live in the tab bar / More sheet on mobile.
+     Admin has no bottom bar, so keep the header Sign Out reachable. */
+  .app-layout:not(.is-admin) .header-actions {
+    display: none;
+  }
+
+  /* Leave room for the fixed bottom bar */
+  .page-content {
+    padding: 16px 16px calc(72px + env(safe-area-inset-bottom));
+  }
+  /* Admin has no bottom bar → no reserved space needed */
+  .is-admin .page-content {
+    padding: 16px;
+  }
+
+  /* ── Bottom tab bar ── */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: var(--color-bg-2);
+    border-top: 1px solid var(--color-border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 2px;
+    min-height: 56px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--color-muted);
+    font-family: inherit;
+    transition: color var(--transition);
+  }
+  .tab-item .tab-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .tab-label {
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+  }
+  .tab-item.router-link-active,
+  .tab-item-active {
+    color: var(--color-green-light);
+  }
+
+  /* ── "More" bottom sheet ── */
+  .sheet-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.55);
+  }
+  .more-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-bg-2);
+    border-top: 1px solid var(--color-border);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 10px 14px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow-lg);
+  }
+  .sheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--color-surface-3);
+    margin: 4px auto 14px;
+  }
+  .sheet-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px 14px;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 10px;
+  }
+  .sheet-links {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sheet-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 13px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--color-text);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+  .sheet-item:active {
+    background: var(--color-surface);
+  }
+  .sheet-item.router-link-active {
+    color: var(--color-green-light);
+  }
+  .sheet-signout {
+    margin-top: 6px;
+    color: var(--color-error);
+  }
+
+  /* Sheet slide-up transition */
+  .sheet-enter-active,
+  .sheet-leave-active { transition: opacity 0.22s ease; }
+  .sheet-enter-active .more-sheet,
+  .sheet-leave-active .more-sheet { transition: transform 0.26s ease; }
+  .sheet-enter-from,
+  .sheet-leave-to { opacity: 0; }
+  .sheet-enter-from .more-sheet,
+  .sheet-leave-to .more-sheet { transform: translateY(100%); }
 }
 </style>

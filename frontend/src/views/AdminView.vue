@@ -305,5 +305,14 @@ function formatDate(dateStr) {
 .empty-state p  { font-size: 13.5px; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-title { font-size: 22px; }
+  /* Search fills the row; result count drops beneath it */
+  .table-toolbar { flex-wrap: wrap; }
+  .search-input  { flex-basis: 100%; }
+  /* 8 columns stay readable and scroll horizontally instead of crushing */
+  .users-table { min-width: 720px; }
+  .table-wrap  { -webkit-overflow-scrolling: touch; }
+}
 @media (max-width: 700px) { .stats-row { grid-template-columns: 1fr 1fr; } }
 </style>

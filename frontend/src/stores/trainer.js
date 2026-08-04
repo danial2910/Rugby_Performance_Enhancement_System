@@ -136,6 +136,10 @@ export const useTrainerStore = defineStore('trainer', () => {
     selectedPlan.value = null
   }
 
+  // Back-navigation helpers (used by the mobile drill-down flow)
+  function deselectPlan()    { selectedPlan.value = null }
+  function deselectAthlete() { selectedAthlete.value = null; selectedPlan.value = null }
+
   function clearError()        { error.value = null }
   function clearSaveSuccess()  { saveSuccess.value = false }
 
@@ -145,6 +149,7 @@ export const useTrainerStore = defineStore('trainer', () => {
     loadingAthletes, loadingPlans, saving, error, saveSuccess,
     fetchAthletes, selectAthlete, fetchAthletePlans,
     editWorkoutPlan, editMealPlan,
-    selectPlan, setPlanType, clearError, clearSaveSuccess
+    selectPlan, setPlanType, deselectPlan, deselectAthlete,
+    clearError, clearSaveSuccess
   }
 })

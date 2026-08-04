@@ -110,7 +110,7 @@
     </div>
 
     <!-- 3-Panel Layout -->
-    <div class="trainer-layout">
+    <div class="trainer-layout" :class="'stage-' + mobileStage">
 
       <!-- PANEL 1: Athlete List -->
       <div class="panel panel-athletes">
@@ -153,6 +153,7 @@
         </div>
         <template v-else>
           <div class="panel-header">
+            <button class="mobile-back" @click="trainerStore.deselectAthlete()">←</button>
             <div class="athlete-selected-name">
               {{ trainerStore.selectedAthlete.fullName || trainerStore.selectedAthlete.username }}
             </div>
@@ -187,6 +188,7 @@
         </div>
         <template v-else>
           <div class="viewer-header">
+            <button class="mobile-back mobile-back-viewer" @click="trainerStore.deselectPlan()">← Plans</button>
             <div class="viewer-title-row">
               <h3 class="viewer-plan-name">{{ trainerStore.selectedPlan.planName }}</h3>
               <div class="viewer-actions">
@@ -287,6 +289,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useTrainerStore } from '@/stores/trainer'
 
 const trainerStore = useTrainerStore()
+
+// ── Mobile drill-down stage (Athletes → Plans → Viewer) ────────────────────────
+const mobileStage = computed(() => {
+  if (trainerStore.selectedPlan)    return 'viewer'
+  if (trainerStore.selectedAthlete) return 'plans'
+  return 'athletes'
+})
 
 // ── Athlete search ────────────────────────────────────────────────────────────
 const athleteSearch = ref('')
@@ -389,7 +398,7 @@ function renderMarkdown(text) {
     const thead = '<thead><tr>' + headerRow.map(c => `<th>${mdInlineFormat(c)}</th>`).join('') + '</tr></thead>'
     const tbody = '<tbody>' + bodyRows.map(r => '<tr>' + r.map(c => `<td>${mdInlineFormat(c)}</td>`).join('') + '</tr>').join('') + '</tbody>'
     const token = `@@TABLE_${tables.length}@@`
-    tables.push(`<table class="md-table">${thead}${tbody}</table>`)
+    tables.push(`<div class="md-table-wrap"><table class="md-table">${thead}${tbody}</table></div>`)
     return token + '\n'
   })
 
@@ -509,6 +518,8 @@ const pieSlices = computed(() => {
 .panel { background: var(--color-bg-2); border: 1px solid var(--color-border); border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden; min-height: 500px; }
 .panel-header { display: flex; align-items: center; gap: 8px; padding: 16px 16px 12px; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
 .panel-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--color-text); margin: 0; flex: 1; }
+/* Mobile drill-down back buttons — hidden on desktop */
+.mobile-back { display: none; }
 .count-badge { background: #3b82f6; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; }
 .athlete-selected-name { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: #3b82f6; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .search-box { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
@@ -608,4 +619,37 @@ const pieSlices = computed(() => {
 .btn-spinner { width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ── Mobile: drill-down navigation ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* One full-width panel at a time instead of 3 fixed columns */
+  .trainer-layout { grid-template-columns: 1fr; }
+  .panel { min-height: 60vh; }
+
+  /* Show only the panel matching the current stage */
+  .stage-athletes .panel-plans,
+  .stage-athletes .panel-viewer { display: none; }
+  .stage-plans .panel-athletes,
+  .stage-plans .panel-viewer    { display: none; }
+  .stage-viewer .panel-athletes,
+  .stage-viewer .panel-plans    { display: none; }
+
+  /* Back buttons */
+  .mobile-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--color-bg-3);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .mobile-back-viewer { margin-bottom: 12px; }
+}
 </style>

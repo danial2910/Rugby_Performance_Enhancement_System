@@ -328,4 +328,24 @@ onMounted(async () => {
 }
 .btn-send:hover:not(:disabled) { background: var(--color-green-light); }
 .btn-send:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Mobile ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .chat-view {
+    /* full mobile header (52px) + page padding + bottom tab bar */
+    height: calc(100dvh - 52px - 88px);
+    min-height: 360px;
+    border-radius: var(--radius-md);
+  }
+  .chat-header { padding: 14px 16px; }
+  .chat-header h2 { font-size: 22px; }
+  .subtitle { font-size: 13px; }
+  .chat-thread { padding: 16px 14px; gap: 12px; }
+  .bubble-row { max-width: 90%; }
+  .avatar { width: 28px; height: 28px; font-size: 12px; }
+  .bubble { padding: 10px 13px; }
+  .error-banner { margin: 0 14px 10px; }
+  .composer { padding: 12px 14px; gap: 8px; }
+  .btn-send { padding: 11px 16px; }
+}
 </style>

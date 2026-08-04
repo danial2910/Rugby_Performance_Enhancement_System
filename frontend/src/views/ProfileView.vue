@@ -827,6 +827,13 @@ select.form-input option { background: #141a16; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
 /* ── Responsive ───────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Tighter cards + smaller heading reclaim width on phones */
+  .page-title   { font-size: 24px; }
+  .page-header  { margin-bottom: 20px; }
+  .profile-card { padding: 16px; }
+  .card-header  { flex-wrap: wrap; gap: 10px; }
+}
 @media (max-width: 700px) {
   .form-grid   { grid-template-columns: 1fr; }
   .form-grid-4 { grid-template-columns: 1fr 1fr; }

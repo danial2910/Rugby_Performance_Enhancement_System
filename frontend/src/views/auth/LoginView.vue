@@ -161,5 +161,27 @@ async function handleLogin() {
 .form-divider::before, .form-divider::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
 .btn-register { display: block; text-align: center; padding: 11px; background: transparent; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; color: #a8c0ae; text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.18s; }
 .btn-register:hover { background: #212c24; color: #e8f0ea; border-color: #1a7a45; }
-@media (max-width: 768px) { .login-page { grid-template-columns: 1fr; border-radius: 0; } .login-brand { padding: 32px 24px; } .brand-title { font-size: 36px; } .brand-features { display: none; } .login-form-panel { padding: 32px 24px; } }
+@media (max-width: 768px) {
+  .login-page { grid-template-columns: 1fr; border-radius: 0; min-height: 100vh; height: auto; }
+  .login-brand { padding: 32px 24px; }
+  .brand-title { font-size: 30px; }
+  .brand-features { display: none; }
+  .login-form-panel { padding: 32px 24px; }
+}
+
+@media (max-width: 480px) {
+  .login-page { max-width: 100%; }
+  .login-brand { padding: 28px 20px; }
+  .brand-inner { max-width: 100%; }
+  .brand-logo-img { width: 96px; height: 96px; }
+  .brand-title { font-size: 24px; }
+  .brand-tagline { font-size: 13.5px; margin-bottom: 24px; }
+  .brand-credit { font-size: 11px; }
+  .login-form-panel { padding: 24px 16px; }
+  .login-card { max-width: 100%; }
+  .card-title { font-size: 26px; }
+  .card-subtitle { font-size: 13px; }
+  .form-input { padding: 10px 12px 10px 36px; font-size: 16px; }
+  .btn-login { padding: 12px; font-size: 14.5px; }
+}
 </style>
