@@ -50,6 +50,17 @@ public class ChatbotService {
     /** How many previous turns to replay back to the model as context */
     private static final int HISTORY_CONTEXT_SIZE = 10;
 
+    /**
+     * Completion-token budget for a chat reply.
+     *
+     * Deliberately far smaller than the plan-generation budget: Groq reserves
+     * prompt + this value against the per-minute token allowance (8000 on the
+     * free tier) the moment the request is made, so a chat turn that asked for
+     * the full plan-sized budget would lock out meal/workout generation for a
+     * whole minute. A conversational answer never needs more than this.
+     */
+    private static final int REPLY_TOKEN_BUDGET = 1200;
+
     private static final String UNAVAILABLE_MESSAGE =
             "Chatbot unavailable. Please try again later or contact support.";
 
@@ -97,7 +108,7 @@ public class ChatbotService {
 
         String replyText;
         try {
-            replyText = aiService.generate(prompt);
+            replyText = aiService.generate(prompt, REPLY_TOKEN_BUDGET);
             if (replyText == null || replyText.isBlank()) {
                 replyText = "I couldn't come up with an answer for that — could you try rephrasing your question?";
             }

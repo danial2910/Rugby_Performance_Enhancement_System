@@ -247,18 +247,24 @@ PLAYER PROFILE:
 RULES:
 1. Each day has exactly %d meals. Each meal averages ~%d kcal so daily total reaches ~%d kcal (±10%%).
 2. Use generous, calorie-dense portions — do not under-portion.
-3. For each meal list: foods with portions (grams), per-item macros, then a Total line (Protein, Carbs, Fat, kcal).
+3. List each food with its portion in grams on one line. Do NOT give per-item macros — give macros ONCE per meal, on that meal's Total line (Protein, Carbs, Fat, kcal).
 4. After each day's meals add: Daily Total: Xg Protein, Xg Carbs, Xg Fat, X kcal.
 5. Diet: %s. Allergies: %s — never include these.
 6. Use Malaysian foods (nasi lemak, roti canai, ikan bakar, ayam goreng, etc.).
 7. Vary meals across 7 days. Increase carbs on training days, emphasise protein on recovery days.
 8. End with a Weekly Nutrition Summary table: Day | Calories | Protein | Carbs | Fat.
 
+BREVITY (important): the whole 7-day plan plus the summary table must fit in a single
+response, so be terse. No preamble, no closing commentary, no tips or notes, no bold or
+italic decoration. Do not explain your reasoning. Output only the plan in the exact
+format below. Running long means the plan gets cut off mid-week and is unusable.
+
 FORMAT (follow exactly):
 ## Day 1 (Monday)
 ### Meal 1: Breakfast
-- Food item with portion - macros
-Total: Xg Protein, Xg Carbs, Xg Fat, Xkcal
+- Nasi lemak 250g
+- Boiled egg 2 large
+Total: 35g Protein, 90g Carbs, 28g Fat, 780kcal
 
 Begin now:
 """,

@@ -265,6 +265,11 @@ INSTRUCTIONS:
    mismatch breaks it. Do not include Finisher/Conditioning exercises in this column,
    only Main Workout ones.
 
+BREVITY (important): the whole plan plus the summary table must fit in a single
+response, so be terse. No preamble, no closing commentary, no extra tips beyond the
+Coaching Notes asked for above. Keep each bullet to one line. Do not explain your
+reasoning. Running long means the plan gets cut off mid-week and is unusable.
+
 Begin the plan now:
 """,
                 req.getSessionsPerWeek(),

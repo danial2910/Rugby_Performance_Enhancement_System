@@ -42,8 +42,22 @@ public class AiService {
     @Value("${groq.api.key:}")
     private String groqApiKey;
 
-    @Value("${groq.model:llama-3.3-70b-versatile}")
+    @Value("${groq.model:openai/gpt-oss-120b}")
     private String groqModel;
+
+    // Default completion length cap — see the comment in generate() for why this
+    // exists and why it must stay under the model's tokens-per-minute (TPM) budget.
+    // Plan generation (meal/workout) uses this full budget; the chatbot passes a
+    // much smaller one via the generate(prompt, maxTokens) overload.
+    @Value("${groq.max-completion-tokens:7000}")
+    private Integer maxCompletionTokens;
+
+    // openai/gpt-oss-* are reasoning models: hidden reasoning tokens are billed as
+    // completion tokens and eat into the same cap the visible answer needs. "low"
+    // keeps that overhead to a few hundred tokens instead of ~900, which matters a
+    // lot when the whole per-minute allowance is only 8000.
+    @Value("${groq.reasoning-effort:low}")
+    private String reasoningEffort;
 
     public AiService(
             @Value("${groq.timeout-seconds:60}") long timeoutSeconds,
@@ -62,6 +76,21 @@ public class AiService {
      * @throws RuntimeException if Groq is not reachable, not configured, or returns an error.
      */
     public String generate(String prompt) {
+        return generate(prompt, maxCompletionTokens);
+    }
+
+    /**
+     * Send a prompt to Groq with an explicit completion-length cap.
+     *
+     * <p>Short-answer callers (the chatbot) should pass a small cap. Groq reserves
+     * prompt + maxTokens against the per-minute token allowance up front, so a
+     * chatbot reply asking for the full plan-sized budget would consume almost the
+     * entire minute and starve plan generation.
+     *
+     * @param prompt     The full prompt to send to the model.
+     * @param maxTokens  Upper bound on completion tokens (reasoning included).
+     */
+    public String generate(String prompt, int maxTokens) {
         if (groqApiKey == null || groqApiKey.isBlank()) {
             throw new RuntimeException(
                     "AI engine is not configured. GROQ_API_KEY is missing — " +
@@ -76,16 +105,24 @@ public class AiService {
         // per-day addition work before the closing summary table. Without an
         // explicit, generous cap, the API silently truncates the response mid-plan
         // (e.g. cutting off partway through Day 6, before the Weekly Nutrition
-        // Summary table is ever written). 8000 tokens comfortably covers the
-        // largest plans this app generates while staying within the model's limits.
-        GroqRequest request = new GroqRequest(groqModel, List.of(message), 8000, 0.4);
+        // Summary table is ever written).
+        //
+        // The cap must also stay UNDER the model's tokens-per-minute (TPM) limit:
+        // Groq budgets prompt tokens + max_completion_tokens up front and rejects
+        // the whole request with 413 if the sum exceeds the TPM allowance
+        // (8000 for openai/gpt-oss-120b on the free on_demand tier). Hence 7000,
+        // which leaves room for the prompt itself. Override with
+        // groq.max-completion-tokens if you move to a tier with a higher limit.
+        GroqRequest request = new GroqRequest(
+                groqModel, List.of(message), maxTokens, 0.4, reasoningEffort);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(groqApiKey);
         HttpEntity<GroqRequest> entity = new HttpEntity<>(request, headers);
 
-        log.debug("Calling Groq at {} with model={}", url, groqModel);
+        log.debug("Calling Groq at {} with model={}, maxCompletionTokens={}",
+                url, groqModel, maxTokens);
 
         try {
             ResponseEntity<GroqResponse> response =
@@ -106,6 +143,12 @@ public class AiService {
 
         } catch (HttpClientErrorException e) {
             log.error("Groq API error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            if (e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS
+                    || e.getStatusCode() == HttpStatus.PAYLOAD_TOO_LARGE) {
+                throw new RuntimeException(
+                        "AI engine is busy — the per-minute token limit was reached. " +
+                        "Please wait a minute and try again.", e);
+            }
             throw new RuntimeException(
                     "AI engine returned an error (" + e.getStatusCode() + "). " +
                     "Check that GROQ_API_KEY is valid and not rate-limited.", e);
@@ -138,6 +181,10 @@ public class AiService {
         // Lower temperature → more deterministic, more reliable arithmetic when
         // the model is asked to show its addition work for daily macro totals.
         private Double temperature;
+        // Reasoning models only. Groq ignores this for non-reasoning models, so it
+        // is safe to always send.
+        @com.fasterxml.jackson.annotation.JsonProperty("reasoning_effort")
+        private String reasoningEffort;
     }
 
     @Data
