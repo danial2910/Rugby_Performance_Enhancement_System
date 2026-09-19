@@ -1,5 +1,6 @@
 # AI-Powered Rugby Diet & Fitness Planner
 **UTM Pirates — Universiti Teknologi Malaysia**
+AI-powered rugby diet & fitness planner for UTM Pirates athletes. Personalized meal and workout plans, an AI nutrition chatbot, trainer–athlete appointments, and admin management. Built with Vue 3, Spring Boot, and MongoDB (Final Year Project, UTM).
 Author: Muhammad Danial Syafiq Bin Ermiza
 
 ---
