@@ -287,7 +287,7 @@ Edit `backend/src/main/resources/application.properties`:
 spring.data.mongodb.uri=mongodb://localhost:27017/rugby_planner_db
 
 # JWT — change this in production!
-app.jwt.secret=RugbyPlannerUTMPiratesSecretKey2025SuperSecureBase64EncodedStringXYZ
+app.jwt.secret=<jwt secret key>
 app.jwt.expiration-ms=86400000   # 24 hours
 
 # CORS — add your production domain here
