@@ -57,8 +57,15 @@ public class MealPlan {
     private String  trainingPhase;     // "PRE_SEASON" | "IN_SEASON" | "OFF_SEASON" | "POST_SEASON"
     private String  mealPrepTime;      // "LOW" | "MEDIUM" | "HIGH"
 
-    /** Full AI-generated 7-day meal plan text (markdown from Ollama llama3.2) */
+    /** Full 7-day meal plan text (markdown). Overwritten when the user edits. */
     private String generatedPlan;
+
+    /**
+     * The AI's untouched output, captured the first time the user edits this
+     * plan. Lets the athlete restore the original after a bad edit without
+     * paying for another 30-90s generation. Null until the first edit.
+     */
+    private String originalPlan;
 
     // ── Trainer edit audit fields ─────────────────────────────────────────────
     /** Note the trainer must provide when modifying this plan */

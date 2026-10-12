@@ -116,6 +116,11 @@ public class WorkoutPlanService {
         WorkoutPlan plan = workoutPlanRepository
                 .findByIdAndUserId(planId, user.getId())
                 .orElseThrow(() -> new RuntimeException("Workout plan not found."));
+        // Capture the AI's untouched output the first time this plan is edited,
+        // so the athlete can restore it without regenerating.
+        if (plan.getOriginalPlan() == null) {
+            plan.setOriginalPlan(plan.getGeneratedPlan());
+        }
         plan.setPlanName(req.getPlanName());
         plan.setGeneratedPlan(req.getGeneratedPlan());
         WorkoutPlan saved = workoutPlanRepository.save(plan);
@@ -334,6 +339,7 @@ Begin the plan now:
                 .availableEquipment(plan.getAvailableEquipment())
                 .focusArea(plan.getFocusArea())
                 .generatedPlan(plan.getGeneratedPlan())
+                .originalPlan(plan.getOriginalPlan())
                 .trainerNote(plan.getTrainerNote())
                 .lastEditedBy(plan.getLastEditedBy())
                 .isActive(plan.isActive())

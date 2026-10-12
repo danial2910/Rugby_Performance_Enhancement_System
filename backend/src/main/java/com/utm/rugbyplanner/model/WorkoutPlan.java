@@ -60,8 +60,15 @@ public class WorkoutPlan {
     private String  availableEquipment;// "GYM" | "HOME" | "FIELD" | "MINIMAL"
     private String  focusArea;         // optional free text
 
-    /** Full AI-generated plan text (markdown from Ollama llama3.2) */
+    /** Full plan text (markdown). Overwritten when the user edits. */
     private String generatedPlan;
+
+    /**
+     * The AI's untouched output, captured the first time the user edits this
+     * plan. Lets the athlete restore the original after a bad edit without
+     * paying for another 20-60s generation. Null until the first edit.
+     */
+    private String originalPlan;
 
     // ── Trainer edit audit fields ─────────────────────────────────────────────
     /** Note the trainer must provide when modifying this plan */

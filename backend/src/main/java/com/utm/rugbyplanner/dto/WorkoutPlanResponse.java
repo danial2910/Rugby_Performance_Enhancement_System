@@ -39,6 +39,9 @@ public class WorkoutPlanResponse {
     /** Full markdown text returned by Ollama llama3.2 */
     private String  generatedPlan;
 
+    /** The AI's original output, present only once the plan has been edited. */
+    private String  originalPlan;
+
     // ── Trainer audit fields ──────────────────────────────────
     private String trainerNote;
     private String lastEditedBy;

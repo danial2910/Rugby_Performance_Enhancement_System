@@ -34,8 +34,11 @@ public class MealPlanResponse {
     private String  mealPrepTime;
 
     // ── AI output ─────────────────────────────────────────────
-    /** Full 7-day markdown meal plan returned by Ollama llama3.2 */
+    /** Full 7-day markdown meal plan. Reflects user edits once made. */
     private String  generatedPlan;
+
+    /** The AI's original output, present only once the plan has been edited. */
+    private String  originalPlan;
 
     // ── Trainer audit fields ──────────────────────────────────
     private String trainerNote;
