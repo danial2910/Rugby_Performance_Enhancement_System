@@ -1,5 +1,8 @@
 # AI-Powered Rugby Diet & Fitness Planner
 **UTM Pirates — Universiti Teknologi Malaysia**
+
+AI-powered rugby diet & fitness planner for UTM Pirates athletes. Personalized meal and workout plans, an AI nutrition chatbot, trainer–athlete appointments, and admin management. Built with Vue 3, Spring Boot, and MongoDB (Final Year Project, UTM).
+
 Author: Muhammad Danial Syafiq Bin Ermiza
 
 ---
@@ -287,7 +290,7 @@ Edit `backend/src/main/resources/application.properties`:
 spring.data.mongodb.uri=mongodb://localhost:27017/rugby_planner_db
 
 # JWT — change this in production!
-app.jwt.secret=RugbyPlannerUTMPiratesSecretKey2025SuperSecureBase64EncodedStringXYZ
+app.jwt.secret=<jwt secret key>
 app.jwt.expiration-ms=86400000   # 24 hours
 
 # CORS — add your production domain here
