@@ -11,18 +11,15 @@ export const useWorkoutStore = defineStore('workout', () => {
   const generating      = ref(false)
   const loadingPlans    = ref(false)
   const error           = ref(null)
-  const generateSuccess = ref(false)
 
-  /** UC004: Generate a new workout plan via Gemini */
+  /** UC004: Generate a new workout plan via the configured AI provider */
   async function generatePlan(payload) {
     generating.value      = true
     error.value           = null
-    generateSuccess.value = false
     try {
       const response = await workoutService.generatePlan(payload)
       if (response.success) {
         activePlan.value      = response.data
-        generateSuccess.value = true
         plans.value = [response.data, ...plans.value]
         return response.data
       }
@@ -158,7 +155,7 @@ export const useWorkoutStore = defineStore('workout', () => {
   function clearError()        { error.value = null }
 
   return {
-    plans, activePlan, generating, loadingPlans, error, generateSuccess,
+    plans, activePlan, generating, loadingPlans, error,
     generatePlan, fetchPlans, editPlan, activatePlan, updateProgress,
     deletePlan, copyPlan, setActivePlan, clearError
   }

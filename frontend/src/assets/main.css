@@ -12,6 +12,22 @@
   --color-gold:         #d4a017;
   --color-gold-light:   #f0be35;
 
+  /* Green text sitting on a green-tinted surface. --color-green-light only
+     reaches 3.22:1 on --color-green-dim, so active chips, tabs and badges
+     use this instead; 5.69:1 on green-dim, 10.1:1 on cards. */
+  --color-green-on-tint: #4ade80;
+
+  /* Categorical tag palette — four distinct hues so position, goal, diet,
+     phase and level stay tellable apart at a glance. Each pair clears 4.5:1. */
+  --tag-goal-bg:        #1b3a5c;
+  --tag-goal-fg:        #7cc0ff;
+  --tag-diet-bg:        #2f1e3d;
+  --tag-diet-fg:        #c99cff;
+  --tag-phase-bg:       #3a2d17;
+  --tag-phase-fg:       #f0be35;
+  --tag-level-bg:       #3a2019;
+  --tag-level-fg:       #ff9d7a;
+
   /* Dark Theme Surfaces */
   --color-bg:           #0b0f0d;
   --color-bg-2:         #141a16;
@@ -20,10 +36,15 @@
   --color-surface-2:    #2a3830;
   --color-surface-3:    #333f36;
 
-  /* Text */
+  /* Text
+     --color-muted carries metadata that users actually read (plan position,
+     dates, field hints), so it has to clear 4.5:1 on the darkest surface it
+     lands on. The previous #6b8574 measured 3.61:1 on --color-surface;
+     #8fab99 measures 4.45:1 on surface-2, 4.93:1 on surface and 5.44:1 on
+     cards. Use --color-text-dim for metadata on green-tinted surfaces. */
   --color-text:         #e8f0ea;
   --color-text-dim:     #a8c0ae;
-  --color-muted:        #6b8574;
+  --color-muted:        #8fab99;
 
   /* Borders */
   --color-border:       rgba(255, 255, 255, 0.08);
@@ -35,6 +56,13 @@
   --color-error-border: rgba(200, 50, 50, 0.25);
   --color-success:      #22a85c;
   --color-success-bg:   rgba(26, 122, 69, 0.12);
+  /* Caution, not failure: orphaned progress, unparseable plan structure. */
+  --color-warn:         #f0be35;
+  --color-warn-bg:      rgba(240, 190, 53, 0.08);
+  --color-warn-border:  rgba(240, 190, 53, 0.22);
+
+  /* Minimum comfortable touch target (WCAG 2.5.8 / platform guidance) */
+  --touch-target:       44px;
 
   /* Layout */
   --sidebar-width:      240px;
@@ -83,6 +111,32 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-green-light);
   outline-offset: 2px;
+}
+
+/* Text selection and caret — browser defaults belong to no design system */
+::selection {
+  background: var(--color-green-dim);
+  color: var(--color-text);
+}
+input, textarea, select { caret-color: var(--color-green-light); }
+
+/* ============================================
+   Reduced motion — global surfaces
+   ============================================
+   Looping decorative motion is stilled in each view's own scoped block, since
+   a scoped `.ai-pulse[data-v-x]` out-specifies a global `.ai-pulse`. This
+   block covers only what is genuinely global: the route transition.
+   Spinners keep rotating on purpose — during a 30–90s generation they are the
+   only remaining signal that work is in progress. */
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: opacity 0.12s ease;
+  }
+  .page-enter-from,
+  .page-leave-to {
+    transform: none;
+  }
 }
 
 /* Utility: visually hidden (accessibility) */

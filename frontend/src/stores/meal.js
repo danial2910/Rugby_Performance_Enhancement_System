@@ -11,18 +11,15 @@ export const useMealStore = defineStore('meal', () => {
   const generating      = ref(false)
   const loadingPlans    = ref(false)
   const error           = ref(null)
-  const generateSuccess = ref(false)
 
-  /** UC006: Generate a new 7-day meal plan via Gemini */
+  /** UC006: Generate a new 7-day meal plan via the configured AI provider */
   async function generatePlan(payload) {
     generating.value      = true
     error.value           = null
-    generateSuccess.value = false
     try {
       const response = await mealService.generatePlan(payload)
       if (response.success) {
         activePlan.value      = response.data
-        generateSuccess.value = true
         plans.value = [response.data, ...plans.value]
         return response.data
       }
@@ -158,7 +155,7 @@ export const useMealStore = defineStore('meal', () => {
   function clearError()        { error.value = null }
 
   return {
-    plans, activePlan, generating, loadingPlans, error, generateSuccess,
+    plans, activePlan, generating, loadingPlans, error,
     generatePlan, fetchPlans, editPlan, activatePlan, updateProgress,
     deletePlan, copyPlan, setActivePlan, clearError
   }

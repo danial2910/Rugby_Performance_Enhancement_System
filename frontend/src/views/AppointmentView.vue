@@ -8,7 +8,7 @@
 
       <div class="page-header">
         <div>
-          <h1 class="page-title">Appointments</h1>
+          <h1 class="page-title">Appointments 📅</h1>
           <p class="page-subtitle">Book a session with a trainer and track your appointments</p>
         </div>
         <button class="btn btn-primary" @click="showBookingForm = !showBookingForm">
@@ -959,7 +959,7 @@ function locationLabel(l) {
 /* ── Page ──────────────────────────────────────────────────────────────────── */
 .appt-page   { display: flex; flex-direction: column; gap: 22px; }
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.page-title  { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: var(--color-text); margin: 0 0 4px; }
+.page-title  { font-family: 'Barlow Condensed', sans-serif; font-size: 32px; font-weight: 700; color: var(--color-green-light); margin: 0 0 4px; }
 .page-subtitle { color: var(--color-muted); font-size: 14px; margin: 0; }
 
 /* ── Card ──────────────────────────────────────────────────────────────────── */

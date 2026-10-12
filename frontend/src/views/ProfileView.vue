@@ -4,7 +4,7 @@
     <!-- Page header -->
     <div class="page-header">
       <div>
-        <h1 class="page-title">My Profile</h1>
+        <h1 class="page-title">My Profile 👤</h1>
         <p class="page-subtitle">
           {{ isAthlete ? 'Manage your personal info and rugby details' : 'Manage your personal info and trainer details' }}
         </p>
@@ -642,7 +642,7 @@ watch(() => profileStore.profile, (p) => populateForms(p))
 /* ── Page ─────────────────────────────────────────── */
 .profile-page { max-width: 900px; }
 .page-header  { margin-bottom: 28px; }
-.page-title   { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; color: #e8f0ea; margin-bottom: 4px; }
+.page-title   { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 700; color: #e8f0ea; margin-bottom: 4px; color: var(--color-green-light);}
 .page-subtitle { font-size: 14px; color: #6b8574; }
 
 /* ── Loading ──────────────────────────────────────── */

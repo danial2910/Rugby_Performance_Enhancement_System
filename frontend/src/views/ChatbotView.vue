@@ -2,7 +2,7 @@
   <div class="chat-view">
     <header class="chat-header">
       <div>
-        <h2>AI Chatbot</h2>
+        <h2>AI Chatbot💬</h2>
         <p class="subtitle">Ask about training, nutrition, recovery, or how to use the platform</p>
       </div>
       <button
